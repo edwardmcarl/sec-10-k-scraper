@@ -1,8 +1,9 @@
 .container {
-    /* remember to set a width */
-    margin-right: auto;
-    margin-left: auto;
-}
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: 100px;
+    gap: 20px;
+  }
 
 body {
     font: normal small-caps normal 16px/1.4 Georgia;
