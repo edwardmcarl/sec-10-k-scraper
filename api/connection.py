@@ -246,4 +246,3 @@ class APIConnection:
             raise APIConnectionError('The SEC EDGAR server could not process the request.', originalError=e)
         except URLError as f:
             raise APIConnectionError('The application failed to reach the server. Check internet connection.', originalError=f)
-print(APIConnection().search10KInfo('CIK0000038009'))
