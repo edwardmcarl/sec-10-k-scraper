@@ -2,22 +2,24 @@ name: Tests
 on:
   push:
     branches:
+      - dev
       - main
     paths:
-      - 'packages/**'
-      - 'tests/**'
-      - 'package-lock.json'
-      - '.github/workflows/tests.yml'
+      - 'ui/packages/**'
+      - 'ui/tests/**'
+      - 'ui/package-lock.json'
+      - '.github/workflows/electron-tests.yml'
   pull_request:
     paths:
-      - 'packages/**'
-      - 'tests/**'
-      - 'package-lock.json'
-      - '.github/workflows/tests.yml'
+      - 'ui/packages/**'
+      - 'ui/tests/**'
+      - 'ui/package-lock.json'
+      - '.github/workflows/electron-tests.yml'
 
 defaults:
   run:
     shell: 'bash'
+    working-directory: 'ui'
 
 jobs:
 

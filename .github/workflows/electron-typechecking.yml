@@ -1,29 +1,29 @@
-name: Linters
+name: Typechecking
 on:
   push:
     branches:
       - main
     paths:
-      - '**.js'
       - '**.ts'
       - '**.vue'
+      - '**/tsconfig.json'
       - 'package-lock.json'
-      - '.github/workflows/lint.yml'
+      - '.github/workflows/electron-typechecking.yml'
   pull_request:
     paths:
-      - '**.js'
       - '**.ts'
       - '**.vue'
+      - '**/tsconfig.json'
       - 'package-lock.json'
-      - '.github/workflows/lint.yml'
-
+      - '.github/workflows/electron-typechecking.yml'
 
 defaults:
   run:
     shell: 'bash'
-
+    working-directory: 'ui'
+    
 jobs:
-  eslint:
+  typescript:
     runs-on: ubuntu-latest
 
     steps:
@@ -37,4 +37,4 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - run: npm run lint
+      - run: npm run typecheck

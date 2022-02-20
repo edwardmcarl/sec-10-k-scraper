@@ -15,6 +15,7 @@ concurrency:
 defaults:
   run:
     shell: 'bash'
+    working-directory: 'ui'
 
 
 jobs:

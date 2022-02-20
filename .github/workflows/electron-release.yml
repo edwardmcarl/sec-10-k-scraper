@@ -6,10 +6,10 @@ on:
     paths-ignore:
       - '**.md'
       - '**.spec.js'
-      - '.idea'
-      - '.gitignore'
+      - '**/.idea'
+      - '**/.gitignore'
       - '.github/**'
-      - '!.github/workflows/release.yml'
+      - '!.github/workflows/electron-release.yml'
 
 concurrency:
   group: release-${{ github.ref }}
@@ -19,6 +19,7 @@ concurrency:
 defaults:
   run:
     shell: 'bash'
+    working-directory: 'ui'
 
 
 jobs:
