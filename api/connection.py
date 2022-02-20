@@ -1,3 +1,4 @@
+from logging import PercentStyle
 from typing import Dict, List
 from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
@@ -7,7 +8,7 @@ from datetime import date
 import re
 
 SEARCH_URL = 'https://efts.sec.gov/LATEST/search-index'
-MINIMUM_SEARCH_START_DATE = '2001-01-01'
+MINIMUM_SEARCH_START_DATE = '1994-01-01'
 
 class APIConnectionError(Exception):
     """
@@ -119,7 +120,7 @@ class APIConnection:
             raise APIConnectionError('The application failed to reach the server. Check internet connection.', originalError=f)
             
 
-    def search10KInfo(self, cikNumber: str, startDate: str = MINIMUM_SEARCH_START_DATE, 
+    def search10KInfo(self, cikNumber: str, forms: List[str] = ['10-K'], startDate: str = MINIMUM_SEARCH_START_DATE, 
                             endDate: str = date.today().isoformat()) -> List[str]:
         """
         Calls to the SEC EDGAR interface to search through the database to return entities
@@ -129,18 +130,21 @@ class APIConnection:
             cikNumber
                 Search key that is passed to the SEC EDGAR server
             
+            forms
+                List of forms to be retrieved from SEC EDGAR server
+            
             startDate
-                String input in Date ISO Format
+                String input in Date ISO Format. Must not be less than 1994-01-01
             
             endDate
-                String input in Date ISO Format
+                String input in Date ISO Format. Must not be greater than today's date
             
         Returns
             A map object that contains the Filing year,
             Commission File number of the issuing entity,
             Exact name of the issuing entity, State of incorporation,
             IRS Employer, Identification Number, 
-            address of principal offices, and Zip code.
+            address of principal offices, and Zip code and document filing data.
 
             Example:
             {
@@ -165,12 +169,21 @@ class APIConnection:
                             "zipCode": None,
                             "stateOrCountryDescription": ""
                         }   
-                    }
+                    },
+                    "filings": {
+                        "reportDate": "",
+                        "filingDate: "",
+                        "document": "",
+                        "form": "",
+                        "isXBRL": 0,
+                        "isINlineXBRL": 0
+                    },
                 }
         """
 
         # Data validation
         cikNumber = cikNumber.upper()
+        forms = [item.upper() for item in forms]
         if not re.match(r'^CIK\d{10}$', cikNumber):
             raise APIConnectionError(f'CIK Number input not in correct format!\
                  => {cikNumber}. Should be of format CIK########## where # is a digit.')
@@ -180,9 +193,13 @@ class APIConnection:
             raise APIConnectionError(f'End date cannot be less than today: {date.today().isoformat()}!')
         elif startDate > endDate:
             raise APIConnectionError('Start date cannot be greater than end date!')
-        dataAPI = f'https://data.sec.gov/submissions/{cikNumber}.json'
-        # TO-DO: We might need to create an users of the application to input their email and Company Name to
-        # ensure my email does not live forever in the codebase. (Added to Backlog on Trello)
+        return self._sendRequest(cikNumber, forms, startDate, endDate, f'{cikNumber}.json')
+
+    """
+    A helper function for APIConnection.search10KInfo
+    """
+    def _sendRequest(self, cikNumber: str, forms: List[str], startDate: str, endDate: str, requestDocument: str, prevData = None) -> List[str]:
+        dataAPI = f'https://data.sec.gov/submissions/{requestDocument}'
         hdrs = {'Host': 'data.sec.gov',
                 'User-Agent': 'Lafayette College yevenyos@lafayette.edu',
                 'Accept-Encoding': 'gzip, deflate, br',
@@ -194,18 +211,40 @@ class APIConnection:
                 encoding = res.info().get_content_charset('utf-8')
                 try:
                     decompressedData = gzip.decompress(data)
-                    data = json.load(decompressedData.decode(encoding))
+                    data = json.loads(decompressedData.decode(encoding))
                 except Exception as e:
                     raise APIConnectionError("Unexpected error occured when decompressing and decoding data from SEC EDGAR server.", originalError=e)
 
-                # TO-DO: Implement the 10-K HTML document extraction from the SEC server
-
-                returnedData = {"cik": cikNumber, "issuing_entity": data['name'],
-                 'state_of_incorporation': data['stateOfIncorporation'],
-                "ein": data['ein'] if data['ein'] is not None else '', "address": data['addresses']}
-                res.close()
+                if prevData is None:
+                    returnedData = {"cik": cikNumber, "issuing_entity": data['name'],
+                    'state_of_incorporation': data['stateOfIncorporation'],
+                    "ein": data['ein'] if data['ein'] is not None else '', "address": data['addresses'], 'filings':[]}
+                    recentFilings = data['filings']['recent']
+                else:
+                    returnedData = prevData
+                    recentFilings = data
+                
+                for i in range(len(recentFilings['accessionNumber'])):
+                    if recentFilings['filingDate'][i] >= startDate and recentFilings['filingDate'][i] <= endDate:
+                        if recentFilings['form'][i] in forms:
+                            cik = cikNumber.strip('CIK').strip('0')
+                            accessionNumber = recentFilings['accessionNumber'][i].replace('-', '')
+                            doc = f"{recentFilings['accessionNumber'][i]}.txt" if len(recentFilings['primaryDocument'][i]) == 0 else recentFilings['primaryDocument'][i]
+                            isXBRL = recentFilings['isXBRL'][i]
+                            isInlineXBRL = recentFilings['isInlineXBRL'][i]
+                            returnedData['filings'].append({'reportDate': recentFilings['reportDate'][i], 
+                            'filingDate': recentFilings['filingDate'][i], "form": recentFilings['form'][i],
+                            'document': f'https://sec.gov/Archives/edgar/data/{cik}/{accessionNumber}/{doc}',
+                            'isXBRL': isXBRL, 'isInlineXBRL': isInlineXBRL})
+                    else:
+                        break
+                if prevData is None and 'files' in data['filings']:
+                    for i in range(len(data['filings']['files'])):
+                        if data['filings']['files'][i]['filingTo'] >= startDate:
+                            returnedData = self._sendRequest(cikNumber, forms, startDate, endDate, data['filings']['files'][i]['name'], prevData=returnedData)
                 return returnedData
         except HTTPError as e:
             raise APIConnectionError('The SEC EDGAR server could not process the request.', originalError=e)
         except URLError as f:
             raise APIConnectionError('The application failed to reach the server. Check internet connection.', originalError=f)
+print(APIConnection().search10KInfo('CIK0000038009'))
