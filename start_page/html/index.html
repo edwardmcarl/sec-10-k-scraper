@@ -22,11 +22,11 @@
   <!--  jQuery -->
   <script type="text/javascript" src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
 
-  <title>SEC Scraper</title>
+  <title>SEC EDGAR 10-K Information Access</title>
 </head>
 <div class="container">
   <img src="/start_page/img/SEC-Logo.jpg" alt="" height="150" width="150">
-  <h1>SEC Scraper</h1>
+  <h1>SEC EDGAR 10-K Information Access</h1>
 </div>
 
 
@@ -55,12 +55,20 @@
   </div>
 </div>
 
-<div class="container"
-<div class="mb-3">
-  <label for="formFile" class="form-label">Read from file:</label>
-  <input class="form-control" type="file" id="formFile">
+<div class="container">
+  <div class="mb-3">
+    <label for="formFile" class="form-label">Read from file:</label>
+    <input class="form-control" type="file" id="formFile">
+  </div>
 </div>
+
+<div class="container">
+  <div class="alert alert-danger" role="alert">
+    Errors occurred when processing input file.
+  </div>
 </div>
+
+
 
 <div class="container">
   <div id="date-picker-example" class="md-form md-outline input-with-post-icon datepicker">
@@ -71,34 +79,38 @@
     <input placeholder="End Date" type="text" id="example" class="form-control">
     <i class="fas fa-calendar input-prefix" tabindex=0></i>
   </div>
-    <div class="container">
-      <table class="table table-hover">
-        <thead>
-          <tr>
-            <th scope="col">#</th>
-            <th scope="col">Entity Name</th>
-            <th scope="col">CIK Number</th>
-            <th scope="col">Filing Date</th>
-            <th scope="col">10-K Document</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <th scope="row">1</th>
-            <td>FORD MOTOR CO (F, FPB, F-PC)</td>
-            <td>CIK 000037996</td>
-            <td>2022-02-04</td>
-            <td>https://www.sec.gov/Archives/ed..</td>
-          </tr>
-          <tr>
-            <th scope="row">1</th>
-            <td>FORD MOTOR CO (F, FPB, F-PC)</td>
-            <td>CIK 000037996</td>
-            <td>2022-02-05</td>
-            <td>https://www.sec.gov/Archives/ed..</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+  <div class="container">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th scope="col">#</th>
+          <th scope="col">Entity Name</th>
+          <th scope="col">CIK Number</th>
+          <th scope="col">Filing Date</th>
+          <th scope="col">10-K Document</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row">1</th>
+          <td>FORD MOTOR CO (F, FPB, F-PC)</td>
+          <td>CIK 000037996</td>
+          <td>2022-02-04</td>
+          <td>https://www.sec.gov/Archives/ed..</td>
+          <td> <button type="button" class="btn btn-primary">Extract Info</button> </td>
+        </tr>
+        <tr>
+          <th scope="row">2</th>
+          <td>FORD MOTOR CO (F, FPB, F-PC)</td>
+          <td>CIK 000037996</td>
+          <td>2022-02-05</td>
+          <td>https://www.sec.gov/Archives/ed..</td>
+          <td> <button type="button" class="btn btn-primary">Extract Info</button> </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <button type="button" class="btn btn-primary">Get Info</button>
 
 </html>
