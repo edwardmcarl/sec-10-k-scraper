@@ -36,7 +36,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
   integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
 </div>
-
+<!-- Search bar -->
 <div class="container">
   <div class="input-group">
     <input type="search" class="form-control rounded" placeholder="Entity/CIK" aria-label="Search"
@@ -45,21 +45,42 @@
   </div>
 </div>
 
-
+<!-- Start End Date -->
 <div class="container">
-  <div class="form-check">
-    <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
-    <label class="form-check-label" for="flexCheckDefault">
-      Apply Named Entity Recognition to Itemized Sections
-    </label>
+  <div class="row">
+    <div class="col">
+        <div id="date-picker-example" class="md-form md-outline input-with-post-icon datepicker">
+          <input placeholder="Start Date" type="text" id="example" class="form-control">
+          <i class="fas fa-calendar input-prefix" tabindex=0></i>
+        </div>
+    </div>
+    <div class="col">
+      <div id="date-picker-example" class="md-form md-outline input-with-post-icon datepicker">
+        <input placeholder="End Date" type="text" id="example" class="form-control">
+        <i class="fas fa-calendar input-prefix" tabindex=0></i>
+      </div>
+    </div>
   </div>
 </div>
 
+<!-- Choose File/ Apply NER -->
 <div class="container">
   <div class="row">
-    <div class="col-sm">
+    <div class="col">
       <label for="formFile" class="form-label">Read from file:</label>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
       <input class="form-control" type="file" id="formFile">
+    </div>
+    <div class="col">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+        <label class="form-check-label" for="flexCheckDefault">
+          Apply Named Entity Recognition to Itemized Sections
+        </label>
+      </div>
     </div>
   </div>
 </div>
@@ -70,17 +91,9 @@
   </div>
 </div>
 
-
-
+<!-- Results Table -->
 <div class="container">
-  <div id="date-picker-example" class="md-form md-outline input-with-post-icon datepicker">
-    <input placeholder="Start Date" type="text" id="example" class="form-control">
-    <i class="fas fa-calendar input-prefix" tabindex=0></i>
-  </div>
-  <div id="date-picker-example" class="md-form md-outline input-with-post-icon datepicker">
-    <input placeholder="End Date" type="text" id="example" class="form-control">
-    <i class="fas fa-calendar input-prefix" tabindex=0></i>
-  </div>
+
   <div class="container">
     <table class="table table-hover">
       <thead>
