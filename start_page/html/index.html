@@ -39,9 +39,9 @@
 
 <div class="container">
   <div class="input-group">
-    <input type="search" class="form-control rounded" placeholder="Search" aria-label="Search"
+    <input type="search" class="form-control rounded" placeholder="Entity/CIK" aria-label="Search"
       aria-describedby="search-addon" />
-    <button type="button" class="btn btn-outline-primary">search</button>
+    <button type="button" class="btn btn-outline-primary">Search</button>
   </div>
 </div>
 
@@ -56,9 +56,11 @@
 </div>
 
 <div class="container">
-  <div class="mb-3">
-    <label for="formFile" class="form-label">Read from file:</label>
-    <input class="form-control" type="file" id="formFile">
+  <div class="row">
+    <div class="col-sm">
+      <label for="formFile" class="form-label">Read from file:</label>
+      <input class="form-control" type="file" id="formFile">
+    </div>
   </div>
 </div>
 
@@ -97,7 +99,7 @@
           <td>CIK 000037996</td>
           <td>2022-02-04</td>
           <td>https://www.sec.gov/Archives/ed..</td>
-          <td> <button type="button" class="btn btn-primary">Extract Info</button> </td>
+          <td> <button type="button" class="btn btn-outline-secondary">Extract Info</button> </td>
         </tr>
         <tr>
           <th scope="row">2</th>
@@ -105,12 +107,14 @@
           <td>CIK 000037996</td>
           <td>2022-02-05</td>
           <td>https://www.sec.gov/Archives/ed..</td>
-          <td> <button type="button" class="btn btn-primary">Extract Info</button> </td>
+          <td> <button type="button" class="btn btn-outline-secondary">Extract Info</button> </td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <button type="button" class="btn btn-primary">Get Info</button>
+  <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+    <button class="btn btn-primary" type="button">Get Info</button>
+  </div>
 
 </html>
