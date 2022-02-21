@@ -9,14 +9,19 @@
     "eslint:recommended",
     /** @see https://github.com/typescript-eslint/typescript-eslint/tree/master/packages/eslint-plugin#recommended-configs */
     "plugin:@typescript-eslint/recommended"
+    
   ],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "ecmaVersion": 12,
-    "sourceType": "module"
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
+    }
   },
   "plugins": [
-    "@typescript-eslint"
+    "@typescript-eslint",
+    "react"
   ],
   "ignorePatterns": [
     "node_modules/**",
@@ -49,5 +54,10 @@
     "quotes": [
       "warn", "single"
     ]
+  },
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
   }
 }

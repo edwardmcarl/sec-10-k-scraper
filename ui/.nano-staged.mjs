@@ -8,7 +8,7 @@ export default {
    * @param {string[]} filenames
    * @return {string[]}
    */
-  'packages/**/{*.ts,*.vue,tsconfig.json}': ({filenames}) => {
+  'packages/**/{*.ts,*.tsx,*.vue,tsconfig.json}': ({filenames}) => {
     const pathToPackages = resolve(process.cwd(), 'packages') + sep;
     return Array.from(
       filenames.reduce((set, filename) => {
