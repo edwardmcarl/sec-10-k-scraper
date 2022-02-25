@@ -88,6 +88,8 @@ class APIConnectionError(Exception):
     END_DATE_INPUT_ERROR = f'End date cannot be than today\'s date'
     DATE_INPUT_ERROR = 'Start date cannot be later than end date'
     UNEXPECTED_ERROR = 'Something unexpected occured when handling the request'
+    NO_CIK_EXISTS_ERROR = 'The CIK number input does not exist in SEC EDGAR database'
+
 
     def __init__(self, message, *values, originalError=None):
         self.message = message
@@ -243,9 +245,9 @@ class APIConnection:
         # Data validation
         if len(forms) == 0:
             return []
-        cik_number = cik_number.upper()
-        forms = [item.upper() for item in forms]
-        if not re.match(r'^CIK\d{10}$', cik_number):
+        cik_number_updated = cik_number.upper()
+        forms_updated = [item.upper() for item in forms]
+        if not re.match(r'^CIK\d{10}$', cik_number_updated):
             raise APIConnectionError(APIConnectionError.CIK_INPUT_ERROR, cik_number)
         try:
             date.fromisoformat(start_date)
@@ -263,7 +265,7 @@ class APIConnection:
         elif start_date > end_date:
             raise APIConnectionError(APIConnectionError.DATE_INPUT_ERROR, start_date, end_date)
         
-        return self._send_request(cik_number, forms, start_date, end_date, f'{cik_number}.json')
+        return self._send_request(cik_number_updated, forms_updated, start_date, end_date, f'{cik_number_updated}.json')
 
     """
     A helper function for APIConnection.search_form_info
@@ -318,6 +320,16 @@ class APIConnection:
                 return returned_data
         # HTTPError has to come before URLError. HTTPError is a subset of URLError
         except HTTPError as e:
+            if e.code == 404:
+                if f'{cik_number}.json' == request_document:
+                    # Thrown when cik number input does not exist but meets format.
+                    raise APIConnectionError(APIConnectionError.NO_CIK_EXISTS_ERROR, cik_number, originalError=e)
+                else: 
+                    #Thrown when requested json document found in 'files' property of a legit cik_number's
+                    #f'https://data.sec.gov/submissions/{cik_number}.json' request response does not exist.
+                    #Can be ignored but should preferrably be logged.
+                    return returned_data                 
+
             raise APIConnectionError(APIConnectionError.SERVER_ERROR, originalError=e)
         except URLError as f:
             raise APIConnectionError(APIConnectionError.CONNECTION_ERROR, originalError=f)

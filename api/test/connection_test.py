@@ -80,9 +80,9 @@ class TestAPIConnection(unittest.TestCase):
         with self.assertRaises(APIConnectionError) as cm:
             self.api_conn.search_form_info(self.fake_cik)
         exception = cm.exception
-        self.assertEqual(APIConnectionError.SERVER_ERROR, exception.message)
+        self.assertEqual(APIConnectionError.NO_CIK_EXISTS_ERROR, exception.message)
         self.assertEqual(APIConnectionError.HTTP_TYPE_ERROR, exception.type)
-        self.assertTupleEqual((), exception.values)
+        self.assertTupleEqual((self.fake_cik.upper(),), exception.values)
 
     def test_wrong_date_input_format(self):
         with self.assertRaises(APIConnectionError) as cm:
