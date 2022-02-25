@@ -13,7 +13,7 @@ export default {
     return Array.from(
       filenames.reduce((set, filename) => {
         const pack = filename.replace(pathToPackages, '').split(sep)[0];
-        set.add(`cd ui && npm run typecheck:${pack} --if-present`);
+        set.add(`npm run --prefix ui typecheck:${pack} --if-present`);
         return set;
       }, new Set),
     );
