@@ -13,6 +13,7 @@
     "build:preload": "cd ./packages/preload && vite build",
     "build:renderer": "cd ./packages/renderer && vite build",
     "compile": "cross-env MODE=production npm run build && electron-builder build --config .electron-builder.config.js --dir --config.asar=false",
+    "postinstall": "electron-rebuild",
     "test": "npm run test:main && npm run test:preload && npm run test:renderer && npm run test:e2e",
     "test:e2e": "npm run build && vitest run",
     "test:main": "vitest run -r packages/main --passWithNoTests",
@@ -23,7 +24,8 @@
     "typecheck:main": "tsc --noEmit -p packages/main/tsconfig.json",
     "typecheck:preload": "tsc --noEmit -p packages/preload/tsconfig.json",
     "typecheck:renderer": "tsc --noEmit -p packages/renderer/tsconfig.json",
-    "typecheck": "npm run typecheck:main && npm run typecheck:preload && npm run typecheck:renderer"
+    "typecheck": "npm run typecheck:main && npm run typecheck:preload && npm run typecheck:renderer",
+    "nanotest": "npx --node-options='--inspect' nano-staged"
   },
   "devDependencies": {
     "@types/react": "^17.0.39",
@@ -34,8 +36,9 @@
     "electron": "17.0.1",
     "electron-builder": "22.14.13",
     "electron-devtools-installer": "3.2.0",
+    "electron-rebuild": "^3.2.7",
     "eslint": "8.9.0",
-    "eslint-plugin-react": "^7.28.0",
+    "eslint-plugin-react": "7.28.0",
     "happy-dom": "2.39.1",
     "nano-staged": "0.6.0",
     "playwright": "1.19.1",

@@ -8,6 +8,8 @@ if (process.env.VITE_APP_VERSION === undefined) {
  * @see https://www.electron.build/configuration/configuration
  */
 const config = {
+  nodeGypRebuild: false,
+  npmRebuild: true,
   directories: {
     output: 'dist',
     buildResources: 'buildResources',
@@ -17,7 +19,8 @@ const config = {
   ],
   extraMetadata: {
     version: process.env.VITE_APP_VERSION,
-  }
+  },
+  extraResources: 'extraResources'
 };
 
 module.exports = config;

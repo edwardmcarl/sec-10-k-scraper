@@ -1,6 +1,9 @@
-import {BrowserWindow} from 'electron';
+import {BrowserWindow, ipcMain} from 'electron';
 import {join} from 'path';
 import {URL} from 'url';
+import {remoteCall} from './remote-procedure';
+
+
 
 async function createWindow() {
   const browserWindow = new BrowserWindow({
@@ -24,6 +27,9 @@ async function createWindow() {
     if (import.meta.env.DEV) {
       browserWindow?.webContents.openDevTools();
     }
+    ipcMain.handle('rpc', async (event, props) => {
+      return remoteCall(props.name, props.args);
+    });
   });
 
   /**

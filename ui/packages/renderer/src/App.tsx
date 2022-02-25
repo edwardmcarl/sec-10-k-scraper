@@ -11,7 +11,9 @@ function App() {
         <img src={logo} className="App-logo" alt="logo" />
         <p>Hello Vite + React!</p>
         <p>
-          <button type="button" onClick={() => setCount((count) => count + 1)}>
+          <button type="button" onClick={async () => {
+            setCount(await window.requestRPC.procedure('increment', []));
+          }}>
             count is: {count}
           </button>
         </p>

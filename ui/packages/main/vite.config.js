@@ -30,6 +30,7 @@ const config = {
     },
     rollupOptions: {
       external: [
+        'zerorpc',
         'electron',
         'electron-devtools-installer',
         ...builtinModules.flatMap(p => [p, `node:${p}`]),

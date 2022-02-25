@@ -2,6 +2,7 @@
   "compilerOptions": {
     "module": "esnext",
     "target": "esnext",
+    "allowJs": true,
     "sourceMap": false,
     "moduleResolution": "Node",
     "skipLibCheck": true,
@@ -19,7 +20,8 @@
   },
   "include": [
     "src/**/*.ts",
-    "../../types/**/*.d.ts"
+    "../../types/**/*.d.ts",
+    "external.d.ts"
   ],
   "exclude": [
     "**/*.spec.ts",

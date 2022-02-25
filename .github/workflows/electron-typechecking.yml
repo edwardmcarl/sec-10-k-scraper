@@ -2,17 +2,16 @@ name: Typechecking
 on:
   push:
     branches:
+      - dev
       - main
     paths:
       - '**.ts'
-      - '**.vue'
       - '**/tsconfig.json'
       - 'package-lock.json'
       - '.github/workflows/electron-typechecking.yml'
   pull_request:
     paths:
       - '**.ts'
-      - '**.vue'
       - '**/tsconfig.json'
       - 'package-lock.json'
       - '.github/workflows/electron-typechecking.yml'
@@ -21,7 +20,7 @@ defaults:
   run:
     shell: 'bash'
     working-directory: 'ui'
-    
+
 jobs:
   typescript:
     runs-on: ubuntu-latest
