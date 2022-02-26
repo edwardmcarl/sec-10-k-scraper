@@ -18,128 +18,148 @@
     src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/js/bootstrap-datepicker.min.js"></script>
   <link rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/css/bootstrap-datepicker3.css" />
-    <script>
-        $(function () {
-            $('#datetimepicker1').datepicker({});
-        });
-    </script>
 
   <!--  jQuery -->
-  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+    integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js"
+    integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js"
+    integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+    crossorigin="anonymous"></script>
 
+  <!-- Page Setup -->
   <title>SEC EDGAR 10-K Information Access</title>
 </head>
-<div class="container">
-  <img src="/start_page/img/SEC-Logo.jpg" alt="" height="150" width="150">
-  <h1>SEC EDGAR 10-K Information Access</h1>
-</div>
-
-
-<!-- Option 1: Bootstrap Bundle with Popper -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
-  integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
-</div>
-<!-- Search bar -->
-<div class="container">
-  <div class="input-group">
-    <input type="search" class="form-control rounded" placeholder="Entity/CIK" aria-label="Search"
-      aria-describedby="search-addon" />
-    <button type="button" class="btn btn-outline-primary">Search</button>
+<body>
+  <div class="container">
+    <img src="/start_page/img/SEC-Logo.jpg" alt="" height="150" width="150">
+    <h1>SEC EDGAR 10-K Information Access</h1>
   </div>
-</div>
 
-<!-- Start End Date -->
-<div class="container">
-  <div class="row">
-    <div class="col">
-      <text>Start Date:</text>
+  <!-- Option 1: Bootstrap Bundle with Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+  </div>
+
+  <!-- Search bar -->
+  <div class="container">
+    <div class="input-group">
+      <input type="search" class="form-control rounded" placeholder="Entity/CIK" aria-label="Search"
+        aria-describedby="search-addon" id="searchInput"/>
+      
+    </div>
+  </div>
+
+  <!-- Start End Date -->
+  <div class="container">
+    <div class="row">
+      <div class="col">
+        <text>Start Date:</text>
         <div id="date-picker-example" class="md-form md-outline input-with-post-icon datepicker">
-          <input placeholder="Start Date" type="date" id="example" class="form-control">
+          <input placeholder="Start Date" type="date" id="startDate" class="form-control">
           <i class="fas fa-calendar input-prefix" tabindex=0></i>
         </div>
-    </div>
-    <div class="col">
-      <text>End Date:</text>
-      <div id="date-picker-example" class="md-form md-outline input-with-post-icon datepicker">
-        <input placeholder="End Date" type="date" id="example" class="form-control">
-        <i class="fas fa-calendar input-prefix" tabindex=0></i>
+      </div>
+      <div class="col">
+        <text>End Date:</text>
+        <div id="date-picker-example" class="md-form md-outline input-with-post-icon datepicker">
+          <input placeholder="End Date" type="date" id="endDate" class="form-control">
+          <i class="fas fa-calendar input-prefix" tabindex=0></i>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<!-- Choose File/ Apply NER -->
-<div class="container">
-  <div class="row">
-    <div class="col">
-      <label for="formFile" class="form-label">Read from file:</label>
-    </div>
-  </div>
-  <div class="row">
-    <div class="col">
-      <input class="form-control" type="file" id="formFile">
-    </div>
-    <div class="col">
-      <div class="form-check">
-        <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
-        <label class="form-check-label" for="flexCheckDefault">
-          Apply Named Entity Recognition to Itemized Sections
-        </label>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="container">
-  <div class="row">
-    <div class="col mt-2">
-      <div class="alert alert-danger" role="alert">
-        Errors occurred when processing input file.
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Results Table -->
-<div class="container">
-
+  <!-- Choose File/ Apply NER -->
   <div class="container">
-    <table class="table table-hover">
-      <thead>
-        <tr>
-          <th scope="col">#</th>
-          <th scope="col">Entity Name</th>
-          <th scope="col">CIK Number</th>
-          <th scope="col">Filing Date</th>
-          <th scope="col">10-K Document</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <th scope="row">1</th>
-          <td>FORD MOTOR CO (F, FPB, F-PC)</td>
-          <td>CIK 000037996</td>
-          <td>2022-02-04</td>
-          <td>https://www.sec.gov/Archives/ed..</td>
-          <td> <button type="button" class="btn btn-outline-secondary">Extract Info</button> </td>
-        </tr>
-        <tr>
-          <th scope="row">2</th>
-          <td>FORD MOTOR CO (F, FPB, F-PC)</td>
-          <td>CIK 000037996</td>
-          <td>2022-02-05</td>
-          <td>https://www.sec.gov/Archives/ed..</td>
-          <td> <button type="button" class="btn btn-outline-secondary">Extract Info</button> </td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="row">
+      <div class="col">
+        <label for="fileUpload" class="form-label">Read from file (.txt):</label>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <input class="form-control" type="file" id="fileUpload" accept=".txt">
+      </div>
+    </div>
   </div>
 
-  <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-    <button class="btn btn-primary" type="button">Get Info</button>
+  <!-- Error Message -->
+  <div class="container" id="errorDIV">
+    <div class="row">
+      <div class="col mt-2">
+        <div class="alert alert-danger" role="alert">
+          Errors occurred when processing input file.
+        </div>
+      </div>
+    </div>
   </div>
 
+  <!-- Search Button -->
+  <div class="container" id="searchButton">
+    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+        <button type="button" class="btn btn-primary" onclick="retrieveInfo()">Search</button>
+      </div>
+    </div>
+
+  <!-- Results Table -->
+  <div class="container">
+    <div class="container">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Entity Name</th>
+            <th scope="col">CIK Number</th>
+            <th scope="col">Filing Date</th>
+            <th scope="col">10-K Document</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">1</th>
+            <td>FORD MOTOR CO (F, FPB, F-PC)</td>
+            <td>CIK 000037996</td>
+            <td>2022-02-04</td>
+            <td>https://www.sec.gov/Archives/ed..</td>
+            <td> <div class="form-check">
+              <input class="form-check-input" id="check1" type="checkbox" value="" id="flexCheckDefault" onclick="addToQueue()>
+              <label class="form-check-label" for="flexCheckDefault">
+                Extract Info
+              </label>
+            </div></td>
+          </tr>
+          <tr>
+            <th scope="row">2</th>
+            <td>FORD MOTOR CO (F, FPB, F-PC)</td>
+            <td>CIK 000037996</td>
+            <td>2022-02-05</td>
+            <td>https://www.sec.gov/Archives/ed..</td>
+            <td> <div class="form-check">
+              <input class="form-check-input" id="check2" type="checkbox" value="" id="flexCheckDefault" onclick="addToQueue()">
+              <label class="form-check-label" for="flexCheckDefault">
+                Extract Info
+              </label>
+            </div> </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+
+    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+      <div class="col">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" value="" id="NERCheck">
+          <label class="form-check-label" for="flexCheckDefault">
+            Apply Named Entity Recognition to Itemized Sections
+          </label>
+        </div>
+      </div>
+      <button class="btn btn-primary" type="button" onclick="showError()">Get Info</button>
+    </div>
+  </body>
 </html>
-
