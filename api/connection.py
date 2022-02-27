@@ -81,13 +81,13 @@ class APIConnectionError(Exception):
     SERVER_ERROR = 'The SEC EDGAR server could not process the request'
     CONNECTION_ERROR = 'The application failed to reach the server'
     SEARCH_KEY_ERROR = 'Search key must not be empty string'
-    CIK_INPUT_ERROR = f'CIK number input not in correct format'
-    START_DATE_FORMAT_ERROR = f'Start date input not in ISO format'
-    END_DATE_FORMAT_ERROR = f'End date input not in ISO format'
-    START_DATE_INPUT_ERROR = f'Start date cannot be earlier than 1994-01-01'
-    END_DATE_INPUT_ERROR = f'End date cannot be than today\'s date'
+    CIK_INPUT_ERROR = 'CIK number input not in correct format'
+    START_DATE_FORMAT_ERROR = 'Start date input not in ISO format'
+    END_DATE_FORMAT_ERROR = 'End date input not in ISO format'
+    START_DATE_INPUT_ERROR = 'Start date cannot be earlier than 1994-01-01'
+    END_DATE_INPUT_ERROR = 'End date cannot be later than today\'s date'
     DATE_INPUT_ERROR = 'Start date cannot be later than end date'
-    UNEXPECTED_ERROR = 'Something unexpected occured when handling the request'
+    UNEXPECTED_ERROR = 'Something occured when decompressing and/or decoding response from SEC EDGAR server'
     NO_CIK_EXISTS_ERROR = 'The CIK number input does not exist in SEC EDGAR database'
 
 
@@ -167,8 +167,12 @@ class APIConnection:
         try:
             with urlopen(req) as res:
                 data = res.read()
-                encoding = res.info().get_content_charset('utf-8')
-                data = json.loads(data.decode(encoding))
+                try:
+                    encoding = res.info().get_content_charset('utf-8')
+                    data = json.loads(data.decode(encoding))
+                except Exception as e:
+                    raise APIConnectionError(APIConnectionError.UNEXPECTED_ERROR, originalError=e)
+
                 hits = data['hits'] if data['hits'] else []
                 hits = hits['hits'] if hits['hits'] else []
                 return [{"cik": self._format_cik(hit['_id']), "entity": hit['_source']['entity']} for hit in hits]
@@ -282,7 +286,6 @@ class APIConnection:
             with urlopen(req) as res:
                 data = res.read()
                 encoding = res.info().get_content_charset('utf-8')
-                res.close()
                 # Decompressing received data
                 try:
                     decompressed_data = gzip.decompress(data)
