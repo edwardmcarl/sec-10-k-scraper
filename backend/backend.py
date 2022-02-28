@@ -1,7 +1,6 @@
 from pickle import ADDITEMS
-import zerorpc
-
-count = 1
+import zerorpc, gevent, signal
+count = 0
 class Counter:
     
     
@@ -14,6 +13,8 @@ BIND_ADDRESS = 'tcp://127.0.0.1:55555'
 def main():
     server = zerorpc.Server(Counter())
     server.bind(BIND_ADDRESS)
+    gevent.signal_handler(signal.SIGTERM, server.stop)
+    gevent.signal_handler(signal.SIGINT, server.stop)
     server.run()
     
 if __name__ == '__main__':

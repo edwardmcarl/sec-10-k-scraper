@@ -1,8 +1,9 @@
-import {BrowserWindow, ipcMain} from 'electron';
-import {join} from 'path';
+import {BrowserWindow, ipcMain, app} from 'electron';
+import {join, normalize} from 'path';
 import {URL} from 'url';
 import {remoteCall} from './remote-procedure';
-
+import type { ChildProcess} from 'child_process';
+import {spawn} from 'child_process';
 
 
 async function createWindow() {
@@ -62,4 +63,18 @@ export async function restoreOrCreateWindow() {
   }
 
   window.focus();
+}
+
+export async function launchPythonBackend() {
+  const backendDir = join(app.getAppPath(), '..', 'extraResources');
+  console.log(backendDir);
+  const backendProcess = spawn('./backend', {cwd: backendDir});
+  console.log(backendProcess);
+  const killBackend = (process: ChildProcess) => {console.log(`Killing backend: result = ${process.kill('SIGTERM')}`);};
+  process.on('exit', killBackend.bind(null, backendProcess));
+  process.on('SIGINT', killBackend.bind(null, backendProcess));
+  process.on('SIGTERM', killBackend.bind(null, backendProcess));
+  process.on('SIGUSR1', killBackend.bind(null, backendProcess));
+  process.on('SIGUSR2', killBackend.bind(null, backendProcess));
+  process.on('uncaughtException', killBackend.bind(null, backendProcess));
 }

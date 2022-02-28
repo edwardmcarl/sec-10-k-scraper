@@ -13,7 +13,7 @@
     "build:preload": "cd ./packages/preload && vite build",
     "build:renderer": "cd ./packages/renderer && vite build",
     "compile": "cross-env MODE=production npm run build && electron-builder build --config .electron-builder.config.js --dir --config.asar=false",
-    "postinstall": "electron-rebuild",
+    "postinstall": "npx electron-rebuild",
     "test": "npm run test:main && npm run test:preload && npm run test:renderer && npm run test:e2e",
     "test:e2e": "npm run build && vitest run",
     "test:main": "vitest run -r packages/main --passWithNoTests",
@@ -50,6 +50,7 @@
   },
   "dependencies": {
     "electron-updater": "4.6.5",
+    "exit-hook": "^3.0.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "zerorpc": "github:edwardmcarl/zerorpc-node"

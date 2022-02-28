@@ -30,6 +30,7 @@ const config = {
     },
     rollupOptions: {
       external: [
+        'zeromq',
         'zerorpc',
         'electron',
         'electron-devtools-installer',

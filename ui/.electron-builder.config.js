@@ -9,7 +9,7 @@ if (process.env.VITE_APP_VERSION === undefined) {
  */
 const config = {
   nodeGypRebuild: false,
-  npmRebuild: true,
+  npmRebuild: false,
   directories: {
     output: 'dist',
     buildResources: 'buildResources',

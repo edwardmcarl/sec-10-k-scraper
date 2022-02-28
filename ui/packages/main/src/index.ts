@@ -1,6 +1,7 @@
 import {app} from 'electron';
 import './security-restrictions';
-import {restoreOrCreateWindow} from '/@/mainWindow';
+import {restoreOrCreateWindow, launchPythonBackend} from '/@/mainWindow';
+import {spawn} from 'child_process';
 
 
 /**
@@ -20,7 +21,7 @@ app.on('second-instance', restoreOrCreateWindow);
 app.disableHardwareAcceleration();
 
 /**
- * Shout down background process if all windows was closed
+ * Shut down background process if all windows was closed
  */
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -38,8 +39,10 @@ app.on('activate', restoreOrCreateWindow);
  * Create app window when background process will be ready
  */
 app.whenReady()
+  .then(launchPythonBackend)
+  .catch((e: any) => console.error('Error launching Python backend', e))
   .then(restoreOrCreateWindow)
-  .catch((e) => console.error('Failed create window:', e));
+  .catch((e: any) => console.error('Failed to create window:', e));
 
 
 /**
