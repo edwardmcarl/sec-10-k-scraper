@@ -19,3 +19,7 @@ function retrieveInfo() {
   var fileUpload = document.getElementById("fileUpload").value;
   console.log("Search Input: " + searchInput + "\nStart Date: " + startDate + "\nEnd Date: " + endDate + "\nNER Check: " + NERCheck + "\nFile Upload: " + fileUpload);
 }
+
+function addToQueue() {
+  
+}
