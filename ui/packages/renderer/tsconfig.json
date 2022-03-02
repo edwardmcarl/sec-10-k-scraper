@@ -7,7 +7,7 @@
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "strict": true,
-    "isolatedModules": true,
+    "isolatedModules": false,
     "jsx":"react",
     "types" : ["node"],
     "baseUrl": ".",
@@ -25,7 +25,7 @@
     "types/**/*.d.ts",
     "../../types/**/*.d.ts",
     "../preload/contracts.d.ts"
-  ],
+, "src/js/index.ts"  ],
   "exclude": [
     "**/*.spec.ts",
     "**/*.test.ts",

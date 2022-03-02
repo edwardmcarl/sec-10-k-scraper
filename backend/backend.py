@@ -1,4 +1,6 @@
 from pickle import ADDITEMS
+from backend import APIConnection
+
 import zerorpc, gevent, signal
 count = 0
 class Counter:

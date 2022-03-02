@@ -4,7 +4,7 @@ import {URL} from 'url';
 import {remoteCall} from './remote-procedure';
 import type { ChildProcess} from 'child_process';
 import {spawn} from 'child_process';
-
+import { getPythonExecutableDir, getPythonExecutableName } from './platform-specific';
 
 async function createWindow() {
   const browserWindow = new BrowserWindow({
@@ -66,11 +66,10 @@ export async function restoreOrCreateWindow() {
 }
 
 export async function launchPythonBackend() {
-  const backendDir = join(app.getAppPath(), '..', 'extraResources');
-  console.log(backendDir);
-  const backendProcess = spawn('./backend', {cwd: backendDir});
+
+  const backendProcess = spawn(`./${getPythonExecutableName()}`, {cwd: getPythonExecutableDir()});
   console.log(backendProcess);
-  const killBackend = (process: ChildProcess) => {console.log(`Killing backend: result = ${process.kill('SIGTERM')}`);};
+  const killBackend = (child: ChildProcess) => {console.log(`Killing backend: result = ${child.kill('SIGTERM')}`);};
   process.on('exit', killBackend.bind(null, backendProcess));
   process.on('SIGINT', killBackend.bind(null, backendProcess));
   process.on('SIGTERM', killBackend.bind(null, backendProcess));
