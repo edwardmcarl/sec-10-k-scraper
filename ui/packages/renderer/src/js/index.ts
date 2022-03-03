@@ -10,6 +10,7 @@ const form = {
     // add all data from input into this object
 };
 
+
 function showError() {
     const x = document.getElementById('errorDIV'); //getElementById returns "HTMLElement | null", so we have to handle both cases
     if (x == null) { // example of a 'type guard'; TypeScript doesn't complain about 'x' possibly being null because the if-else excludes the possibility
