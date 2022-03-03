@@ -8,9 +8,9 @@ type possiblePlatforms = ReturnType<typeof platform>;
 // We know that platform() returns a NodeJS.Platform, so we could also just use *that* as our key type, but that would be less educational
 
 const platformExecutables:Record<possiblePlatforms, string | null> = {
-    'win32': 'backend.exe',
+    'win32': 'backend_server.exe',
     'darwin': null, // this is MacOS, @todo figure out the executable name
-    'linux': 'backend',
+    'linux': 'backend_server',
     
     // unsupported platforms
     'aix': null,
