@@ -42,7 +42,7 @@ class EntityPrediction {
 // also a list of EntityPrediction objects
 
 function showError() {
-    var x = document.getElementById("errorDIV");
+    let x = document.getElementById("errorDIV");
     if (x.style.display === "none") {
       x.style.display = "block";
     } else {
@@ -51,11 +51,11 @@ function showError() {
   }
 
 function retrieveInfo() {
-  var searchInput = document.getElementById("searchInput").value;
-  var startDate = document.getElementById("startDate").value;
-  var endDate = document.getElementById("endDate").value;
-  var NERCheck = document.getElementById("NERCheck").checked;
-  var fileUpload = document.getElementById("fileUpload").value;
+  let searchInput = document.getElementById("searchInput").value;
+  let startDate = document.getElementById("startDate").value;
+  let endDate = document.getElementById("endDate").value;
+  let NERCheck = document.getElementById("NERCheck").checked;
+  let fileUpload = document.getElementById("fileUpload").value;
   console.log("Search Input: " + searchInput + "\nStart Date: " + startDate + "\nEnd Date: " + endDate + "\nNER Check: " + NERCheck + "\nFile Upload: " + fileUpload);
 }
 
@@ -69,7 +69,7 @@ function addToQueue() {
 // impacts dropdown
 function updateSearchInput() {
   // get the new input
-  var searchInput = document.getElementById("searchInput").value;
+  let searchInput = document.getElementById("searchInput").value;
   // call search function in API library created by Sena
   // would also catch errors
     // let entityList = search(searchInput);
@@ -91,7 +91,7 @@ function entitySelected() {
 function updateResultsTable() {
   // call search_form_info function in API library created by Sena
   // would also catch errors
-    // var entity_w_filings = search_form_info(searchFormInputs.cik, searchFormInputs.forms, searchFormInputs.startDate, searchFormInputs.endDate)
+    // let entity_w_filings = search_form_info(searchFormInputs.cik, searchFormInputs.forms, searchFormInputs.startDate, searchFormInputs.endDate)
     // if start date and end date are empty strings, what happens?
   // based on the list of filings, populate Filing objects
   // var 
@@ -123,3 +123,4 @@ function updateEndDate() {
     updateResultsTable();
   }
 }
+
