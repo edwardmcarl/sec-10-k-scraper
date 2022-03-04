@@ -59,6 +59,10 @@ This is where our code lies. It's divided into three directories:
 - `renderer`, for the actual renderer process.
 To understand the distinction between these three kinds of code, check out the documentation for [electron's process model](https://www.electronjs.org/docs/latest/tutorial/process-model) and [context isolation](https://www.electronjs.org/docs/latest/tutorial/context-isolation).
 
+Each directory is itself composed of:
+- `dist`, which is for the build process and shouldn't be touched
+- `src`, where source code goes
+- `tests`, for tests
 ##### ui/tests/
 Unit testing will be done using [vitest](https://vitest.dev/), here.
 
@@ -72,6 +76,7 @@ Metadata for tooling. Don't worry about this.
 - [`electron-builder`](https://www.electron.build/) for the build process
 - [`nano-staged`](https://github.com/usmanyunusov/nano-staged#readme) for cross-platform precommit hooks
 
+Before committing, `nano-staged` runs `eslint` on every applicable file in `packages` that is staged for commit, fixing minor errors like missing semicolons automatically. `tsc` checks that types are valid and compatible across the whole project. If either utility finds nay issues it can't resolve automatically, it's reported in the command line and the commit is stopped.
 #### Building
 First, build the Python executable and place it in `buildResources`.
 Then run `npm run compile`. The output will be in `ui/dist/{platform}-unpacked` (see above).
