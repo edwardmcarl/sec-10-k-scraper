@@ -5,7 +5,6 @@ client.connect('tcp://localhost:55555');
 
 export async function remoteCall(funcName:string, args: any[]) {
     return new Promise((resolve, reject) => {
-        
         client.invoke(funcName, ...args, (error:any, response:any) => {
             if (error) {
                 reject(error);

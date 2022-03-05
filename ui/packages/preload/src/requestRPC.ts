@@ -5,6 +5,6 @@ async function procedure(name:string, args:any[] ) {
     return ipcRenderer.invoke('rpc', {name: name, args: args});
 }
 
-export const requestRPC = {procedure} as const; //something
+export const requestRPC = {procedure} as const;
 
 exposeInMainWorld('requestRPC', requestRPC);

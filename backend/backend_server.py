@@ -1,6 +1,6 @@
 from pickle import ADDITEMS
 from api.connection import APIConnection
-import zerorpc, gevent, signal
+import zerorpc, gevent, signal #type: ignore
 
 count = 0
 class Counter:
@@ -10,10 +10,11 @@ class Counter:
         global count
         count = count + 1
         return count
+
 BIND_ADDRESS = 'tcp://127.0.0.1:55555'
 
 def main():
-    server = zerorpc.Server(Counter())
+    server = zerorpc.Server(APIConnection())
     server.bind(BIND_ADDRESS)
     gevent.signal_handler(signal.SIGTERM, server.stop)
     gevent.signal_handler(signal.SIGINT, server.stop)

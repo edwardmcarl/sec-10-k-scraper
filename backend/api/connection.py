@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Any
 from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
 import gzip
@@ -132,7 +132,7 @@ class APIConnection:
         zeroList = ['0' for i in range(10-len(str(cik)))]
         return f"CIK{''.join(zeroList)}{cik}" 
 
-    def search(self, search_key: str) -> Dict[str, str]:
+    def search(self, search_key: str) -> List[Dict[str, str]]:
         """
         Calls to the SEC EDGAR interface to search through the database to return entities
          that match the search key
@@ -185,7 +185,7 @@ class APIConnection:
             
 
     def search_form_info(self, cik_number: str, forms: List[str] = ['10-K'], start_date: str = MINIMUM_SEARCH_START_DATE, 
-                            end_date: str = date.today().isoformat()) -> List[str]:
+                            end_date: str = date.today().isoformat()) -> Dict[str,Any]:
         """
         Calls to the SEC EDGAR interface to search through the database to return entities
          that match the search key
@@ -248,7 +248,7 @@ class APIConnection:
 
         # Data validation
         if len(forms) == 0:
-            return []
+            return {}
         cik_number_updated = cik_number.upper()
         forms_updated = [item.upper() for item in forms]
         if not re.match(r'^CIK\d{10}$', cik_number_updated):
@@ -274,7 +274,7 @@ class APIConnection:
     """
     A helper function for APIConnection.search_form_info
     """
-    def _send_request(self, cik_number: str, forms: List[str], start_date: str, end_date: str, request_document: str, prev_data = None) -> List[str]:
+    def _send_request(self, cik_number: str, forms: List[str], start_date: str, end_date: str, request_document: str, prev_data = None) -> Dict[str,Any]:
         # Making request to server
         data_api = f'https://data.sec.gov/submissions/{request_document}'
         hdrs = {'Host': 'data.sec.gov',
