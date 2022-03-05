@@ -1,6 +1,4 @@
-let form = {
-    // add all data from input into this object
-}
+FILING_NAMES = ['number', 'entityName', 'cikNumber', 'filingDate', 'documentAddress10k', 'extractInfo'];
 
 let searchFormInputs = {
   cik: "",
@@ -57,6 +55,23 @@ function retrieveInfo() {
   let NERCheck = document.getElementById("NERCheck").checked;
   let fileUpload = document.getElementById("fileUpload").value;
   console.log("Search Input: " + searchInput + "\nStart Date: " + startDate + "\nEnd Date: " + endDate + "\nNER Check: " + NERCheck + "\nFile Upload: " + fileUpload);
+
+  // sample returns from API
+  let f1 = new Filing(1, 'Apple', "123456789", "10/10/2010", "10-K");
+  let f2 = new Filing(2, 'Google', "987654321", "10/10/2010", "10-K");
+  let f3 = new Filing(3, 'Microsoft', "123456789", "10/10/2010", "10-K");
+  let f4 = new Filing(4, 'Facebook', "987654321", "10/10/2010", "10-K");
+  let f5 = new Filing(5, 'Amazon', "123456789", "10/10/2010", "10-K");
+  let f6 = new Filing(6, 'Twitter', "987654321", "10/10/2010", "10-K");
+  let f7 = new Filing(7, 'Tesla', "123456789", "10/10/2010", "10-K");
+  let f8 = new Filing(8, 'SpaceX', "987654321", "10/10/2010", "10-K");
+  let f9 = new Filing(9, 'Nasa', "123456789", "10/10/2010", "10-K");
+  let f10 = new Filing(10, 'IBM', "987654321", "10/10/2010", "10-K");
+  var filings = [f1, f2, f3, f4, f5, f6, f7, f8, f9, f10];
+
+  removeAllItemsFromTable();
+  addItemsToTable(filings)
+
 }
 
 function addToQueue() {
@@ -122,5 +137,23 @@ function updateEndDate() {
   if(searchFormInputs.cik){
     updateResultsTable();
   }
+}
+
+// update the results table based on the user's input
+function addItemsToTable(filing_list){
+  let tableBodyObject = document.getElementById('results-table').lastElementChild;
+  for (let i = 0; i < filing_list.length; i++) {
+      let row = tableBodyObject.insertRow();
+      for (let j = 0; j < FILING_NAMES.length; j++) {
+          let cell = row.insertCell();
+          cell.innerText = filing_list[i][FILING_NAMES[j]];
+      }
+  }
+}
+
+// removes all items from the results table
+function removeAllItemsFromTable(){
+  let tableBodyObject = document.getElementById('results-table').lastElementChild
+  tableBodyObject.innerHTML = '\n'
 }
 
