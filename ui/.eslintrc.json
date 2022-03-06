@@ -28,7 +28,7 @@
     "**/dist/**"
   ],
   "rules": {
-    "prefer-const": "warn",
+    "prefer-const": "off",
     "@typescript-eslint/no-unused-vars": "warn",
     "@typescript-eslint/no-var-requires": "off",
     "@typescript-eslint/consistent-type-imports": "error",
