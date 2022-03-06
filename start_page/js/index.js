@@ -1,4 +1,6 @@
-FILING_NAMES = ['number', 'entityName', 'cikNumber', 'filingDate', 'documentAddress10k', 'extractInfo'];
+let form = {
+    // add all data from input into this object
+}
 
 let searchFormInputs = {
   cik: "",
@@ -40,7 +42,7 @@ class EntityPrediction {
 // also a list of EntityPrediction objects
 
 function showError() {
-    let x = document.getElementById("errorDIV");
+    var x = document.getElementById("errorDIV");
     if (x.style.display === "none") {
       x.style.display = "block";
     } else {
@@ -49,29 +51,12 @@ function showError() {
   }
 
 function retrieveInfo() {
-  let searchInput = document.getElementById("searchInput").value;
-  let startDate = document.getElementById("startDate").value;
-  let endDate = document.getElementById("endDate").value;
-  let NERCheck = document.getElementById("NERCheck").checked;
-  let fileUpload = document.getElementById("fileUpload").value;
+  var searchInput = document.getElementById("searchInput").value;
+  var startDate = document.getElementById("startDate").value;
+  var endDate = document.getElementById("endDate").value;
+  var NERCheck = document.getElementById("NERCheck").checked;
+  var fileUpload = document.getElementById("fileUpload").value;
   console.log("Search Input: " + searchInput + "\nStart Date: " + startDate + "\nEnd Date: " + endDate + "\nNER Check: " + NERCheck + "\nFile Upload: " + fileUpload);
-
-  // sample returns from API
-  let f1 = new Filing(1, 'Apple', "123456789", "10/10/2010", "10-K");
-  let f2 = new Filing(2, 'Google', "987654321", "10/10/2010", "10-K");
-  let f3 = new Filing(3, 'Microsoft', "123456789", "10/10/2010", "10-K");
-  let f4 = new Filing(4, 'Facebook', "987654321", "10/10/2010", "10-K");
-  let f5 = new Filing(5, 'Amazon', "123456789", "10/10/2010", "10-K");
-  let f6 = new Filing(6, 'Twitter', "987654321", "10/10/2010", "10-K");
-  let f7 = new Filing(7, 'Tesla', "123456789", "10/10/2010", "10-K");
-  let f8 = new Filing(8, 'SpaceX', "987654321", "10/10/2010", "10-K");
-  let f9 = new Filing(9, 'Nasa', "123456789", "10/10/2010", "10-K");
-  let f10 = new Filing(10, 'IBM', "987654321", "10/10/2010", "10-K");
-  var filings = [f1, f2, f3, f4, f5, f6, f7, f8, f9, f10];
-
-  removeAllItemsFromTable();
-  addItemsToTable(filings)
-
 }
 
 function addToQueue() {
@@ -84,7 +69,7 @@ function addToQueue() {
 // impacts dropdown
 function updateSearchInput() {
   // get the new input
-  let searchInput = document.getElementById("searchInput").value;
+  var searchInput = document.getElementById("searchInput").value;
   // call search function in API library created by Sena
   // would also catch errors
     // let entityList = search(searchInput);
@@ -106,7 +91,7 @@ function entitySelected() {
 function updateResultsTable() {
   // call search_form_info function in API library created by Sena
   // would also catch errors
-    // let entity_w_filings = search_form_info(searchFormInputs.cik, searchFormInputs.forms, searchFormInputs.startDate, searchFormInputs.endDate)
+    // var entity_w_filings = search_form_info(searchFormInputs.cik, searchFormInputs.forms, searchFormInputs.startDate, searchFormInputs.endDate)
     // if start date and end date are empty strings, what happens?
   // based on the list of filings, populate Filing objects
   // var 
@@ -138,22 +123,3 @@ function updateEndDate() {
     updateResultsTable();
   }
 }
-
-// update the results table based on the user's input
-function addItemsToTable(filing_list){
-  let tableBodyObject = document.getElementById('results-table').lastElementChild;
-  for (let i = 0; i < filing_list.length; i++) {
-      let row = tableBodyObject.insertRow();
-      for (let j = 0; j < FILING_NAMES.length; j++) {
-          let cell = row.insertCell();
-          cell.innerText = filing_list[i][FILING_NAMES[j]];
-      }
-  }
-}
-
-// removes all items from the results table
-function removeAllItemsFromTable(){
-  let tableBodyObject = document.getElementById('results-table').lastElementChild
-  tableBodyObject.innerHTML = '\n'
-}
-
