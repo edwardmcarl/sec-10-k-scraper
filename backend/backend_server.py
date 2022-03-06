@@ -1,7 +1,7 @@
 import signal
 from pickle import ADDITEMS
 
-import gevent
+import gevent  # type: ignore
 import zerorpc  # type: ignore
 
 from api.connection import APIConnection
