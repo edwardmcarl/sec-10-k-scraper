@@ -1,0 +1,10 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+cd ui
+echo ""
+npx nano-staged
+cd ../backend
+poetry run isort .
+poetry run mypy .
+poetry run black .

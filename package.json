@@ -1,0 +1,23 @@
+{
+  "name": "sec-10-k-scraper",
+  "version": "0.1.0",
+  "description": "## Project Structure This repository is divided into two main directories: `backend` and `ui`. ### Backend This is the `poetry` project containing the Python backend to the app.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/edwardmcarl/sec-10-k-scraper.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/edwardmcarl/sec-10-k-scraper/issues"
+  },
+  "homepage": "https://github.com/edwardmcarl/sec-10-k-scraper#readme",
+  "dependencies": {
+    "husky": "^7.0.4"
+  }
+}
