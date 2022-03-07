@@ -1,7 +1,7 @@
 import { ipcRenderer } from 'electron';
 import { exposeInMainWorld } from './exposeInMainWorld';
 
-async function procedure(name:string, args:any[] ) {
+async function procedure(name:string, args:any[] = []) {
     return ipcRenderer.invoke('rpc', {name: name, args: args});
 }
 

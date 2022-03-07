@@ -6,5 +6,7 @@ echo ""
 npx nano-staged
 cd ../backend
 poetry run isort .
-poetry run mypy .
 poetry run black .
+poetry run flake8 .
+poetry run mypy .
+

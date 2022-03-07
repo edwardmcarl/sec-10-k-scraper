@@ -6,6 +6,8 @@ from typing import Any, Dict, List
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from zerorpc import Server  # type: ignore
+
 
 class APIConnectionError(Exception):
     """
@@ -127,8 +129,8 @@ class APIConnection:
 
     def _format_cik(self, cik: int) -> str:
         """
-        Helper function that converts the numerical CIK value returned by the EDGAR database (format: \d{1:10})
-        into the correct format for the 10-K document query (format: ^CIK\d{10}$)
+        Helper function that converts the numerical CIK value returned by the EDGAR database (format: \\d{1:10})
+        into the correct format for the 10-K document query (format: ^CIK\\d{10}$)
         """
         zeroList = ["0" for i in range(10 - len(str(cik)))]
         return f"CIK{''.join(zeroList)}{cik}"

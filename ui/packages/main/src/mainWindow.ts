@@ -4,7 +4,7 @@ import {URL} from 'url';
 import {remoteCall} from './remote-procedure';
 import type { ChildProcess} from 'child_process';
 import {spawn} from 'child_process';
-import { getPythonExecutableDir, getPythonExecutableName } from './platform-specific';
+import { getPythonExecutableDir, getPythonExecutableName, gracefullyKillChild } from './platform-specific';
 
 async function createWindow() {
   const browserWindow = new BrowserWindow({
@@ -69,11 +69,10 @@ export async function launchPythonBackend() {
 
   const backendProcess = spawn(`./${getPythonExecutableName()}`, {cwd: getPythonExecutableDir()});
   console.log(backendProcess);
-  const killBackend = (child: ChildProcess) => {console.log(`Killing backend: result = ${child.kill('SIGTERM')}`);};
-  process.on('exit', killBackend.bind(null, backendProcess));
-  process.on('SIGINT', killBackend.bind(null, backendProcess));
-  process.on('SIGTERM', killBackend.bind(null, backendProcess));
-  process.on('SIGUSR1', killBackend.bind(null, backendProcess));
-  process.on('SIGUSR2', killBackend.bind(null, backendProcess));
-  process.on('uncaughtException', killBackend.bind(null, backendProcess));
+  process.on('exit', gracefullyKillChild.bind(null, backendProcess));
+  process.on('SIGINT', gracefullyKillChild.bind(null, backendProcess));
+  process.on('SIGTERM', gracefullyKillChild.bind(null, backendProcess));
+  process.on('SIGUSR1', gracefullyKillChild.bind(null, backendProcess));
+  process.on('SIGUSR2', gracefullyKillChild.bind(null, backendProcess));
+  process.on('uncaughtException', gracefullyKillChild.bind(null, backendProcess));
 }
