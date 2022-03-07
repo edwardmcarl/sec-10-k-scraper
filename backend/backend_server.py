@@ -40,7 +40,7 @@ def main():
     # handle kill signals on mac/linux (e.g. ctrl-c)
     gevent.signal_handler(signal.SIGTERM, server.stop)
     gevent.signal_handler(signal.SIGINT, server.stop)
-    
+
     server.run()
 
 

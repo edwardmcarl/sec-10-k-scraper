@@ -68,7 +68,7 @@ class TestAPIConnectionError(unittest.TestCase):
 class TestAPIConnection(unittest.TestCase):
     def setUp(self):
         try:
-            with urlopen("https://www.example.com") as res:
+            with urlopen("https://www.example.com") as res:  # noqa: F841
                 self._conn = True
         except URLError:
             self._conn = False

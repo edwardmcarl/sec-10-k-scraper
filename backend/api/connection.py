@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from zerorpc import Server  # type: ignore
+from zerorpc import Server  # type: ignore # noqa: F401
 
 
 class APIConnectionError(Exception):
