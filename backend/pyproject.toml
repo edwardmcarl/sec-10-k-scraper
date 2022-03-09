@@ -10,6 +10,9 @@ pyzmq = "^22.3.0"
 zerorpc = {git = "https://github.com/0rpc/zerorpc-python.git"}
 gevent = "^21.12.0"
 unittest = "^0.0"
+bs4 = "^0.0.1"
+lxml = "^4.8.0"
+html5lib = "^1.1"
 
 
 [tool.poetry.dev-dependencies]
