@@ -4,11 +4,19 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.min.js';
 import React from 'react';
 import {useState, useEffect} from 'react';
-import {Button, Col, Container, Dropdown, Row, InputGroup, FormControl, FormLabel, Table} from 'react-bootstrap';
+import {Button, Col, Container, Dropdown, Row, InputGroup, FormControl, FormLabel, Table, ListGroup, Spinner, Form} from 'react-bootstrap';
 import DatePicker from 'react-date-picker';
 
 // interface FilingSearchResult {
   
+class Result {
+  cik: string;
+  name: string;
+  constructor(cikIn: string, nameIn: string){
+    this.cik = cikIn;
+    this.name = nameIn;
+  }
+}
 // }
 class Filing {
   num: number; // number in table
@@ -60,10 +68,71 @@ function ResultsRow(props: ResultsRowProps) {
   );
 }
 
+// experimenting https://devrecipes.net/typeahead-with-react-hooks-and-bootstrap/
+let dropdownData: (Result | undefined)[] = [
+  { cik: '1', name: 'devrecipes.net' },
+  { cik: '2', name: 'devrecipes' },
+  { cik: '3', name: 'devrecipe' },
+  { cik: '4', name: 'dev recipes' },
+  { cik: '5', name: 'development' },
+];
 
+const mockResults = (keyword: string) => {
+  return new Promise((res, rej) => {
+    setTimeout(() => {
+      const searchResults = dropdownData;
+      res(searchResults);
+    }, 500);
+  });
+};
+
+// type for the result of the search() Python call
+interface searchResult {
+  cik: string,
+  entity: string
+}
+
+// class for search results entity-cik pairs
+class WhateverFiling {
+  cik: string;
+  entity:string;
+  constructor(cikIn:string, entityIn:string) {
+    this.cik = cikIn;
+    this.entity = entityIn;
+  }
+}
+
+async function updateSearchInput(input: string) {
+  // get the new input
+  const searchInput = input;
+  // call search function in API library created by Sena
+  // would also catch errors
+    // let entityList = search(searchInput);
+  let entityList = await window.requestRPC.procedure('search', [searchInput]);
+  
+  let entityClassList = (entityList as searchResult[]).map((member) => { 
+    if ((member as searchResult).cik !== undefined && (member as searchResult).entity !== undefined) { //type guard
+      return new Result(member.cik, member.entity);
+    }
+  });
+  
+  dropdownData = entityClassList;
+  console.log(entityClassList);
+  console.log('searched');
+
+  // potentially a for loop? unsure how to convert python dictionaries to javascript
+  // update dropdown
+    // UI feature to be implemented later?
+}
 
 function App() {
-  
+  // experimenting https://devrecipes.net/typeahead-with-react-hooks-and-bootstrap/
+  const [results, setResults] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [name, setName] = useState('');
+  const [isNameSelected, setIsNameSelected] = useState(false);
+
+  // regularly scheduled programming
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate ] = useState(new Date());
   const [filingResultList, setFilingResultList] = useState(new Array<Filing>()); // input data from API
@@ -89,9 +158,40 @@ function App() {
     let filingResults = await window.requestRPC.procedure('search_form_info', [searchBarContents, startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number
   };
   
+  // experimenting https://devrecipes.net/typeahead-with-react-hooks-and-bootstrap/
+  const handleInputChange = (e: any) => {
+    const nameValue = e.target.value;
+    setName(nameValue);
+    // adapting for senior project code
+    setSearchBarContents(nameValue);
+    updateSearchInput(nameValue);
+    // even if we've selected already an item from the list, we should reset it since it's been changed
+    setIsNameSelected(false);
+    // clean previous results, as would be the case if we get the results from a server
+    setResults([]);
+    if (nameValue.length > 1) {
+      setIsLoading(true);
+      mockResults(nameValue)
+        .then((res) => {
+          setResults(res as React.SetStateAction<never[]>);
+          setIsLoading(false);
+        })
+        .catch(() => {
+          setIsLoading(false);
+        });
+    }
+  };
+
+  const onNameSelected = (selectedName: any) => {
+    // this is where we would get the CIK number of the selected thing
+    setName(selectedName);
+    setIsNameSelected(true);
+    setResults([]);
+  };
+
   return (
   <div> {/* Outer div */}
-
+  
   {/* Title / header*/}
     <Container>
       <Row>
@@ -103,7 +203,7 @@ function App() {
     </Container>
 
   {/* Search Bar*/}
-    <Container>
+    {/* <Container>
       <InputGroup>
         <FormControl 
         placeholder="Entity/CIK"
@@ -114,8 +214,39 @@ function App() {
           }}
         />
       </InputGroup>
-    </Container>
+    </Container> */}
 
+    {/* Search Bar Two (Experimenting) */}
+    <Container>
+      <Form.Group className="typeahead-form-group">
+        <Form.Control
+          placeholder="Entity/CIK"
+          id="searchInput"
+          type="text"
+          autoComplete="off"
+          onChange={handleInputChange}
+          value={name}
+        />
+        <ListGroup className="typeahead-list-group">
+          {!isNameSelected &&
+            results.length > 0 &&
+            results.map((result: Result) => (
+              <ListGroup.Item
+                key={result.cik}
+                className="typeahead-list-group-item"
+                onClick={() => onNameSelected(result.name)}
+              >
+                {result.name}
+              </ListGroup.Item>
+            ))}
+          {!results.length && isLoading && (
+            <div className="typeahead-spinner-container">
+              <Spinner animation="border" />
+            </div>
+          )}
+        </ListGroup>
+      </Form.Group>
+    </Container>
 
   {/* Start and End Dates*/}
   <Container>
