@@ -125,6 +125,16 @@ async function updateSearchInput(input: string) {
     // UI feature to be implemented later?
 }
 
+async function selectEntity(res: Result, startDate: Date, endDate: Date){
+  let startDateISO = startDate.toISOString();
+  let endDateISO = endDate.toISOString();
+  console.log('start date: ' + startDateISO);
+  console.log('end date: ' + endDateISO);
+  let filingResults = await window.requestRPC.procedure('search_form_info', [res.cik, startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number
+  console.log('selected entity');
+  console.log(filingResults);
+}
+
 function App() {
   // experimenting https://devrecipes.net/typeahead-with-react-hooks-and-bootstrap/
   const [results, setResults] = useState([]);
@@ -182,11 +192,12 @@ function App() {
     }
   };
 
-  const onNameSelected = (selectedName: any) => {
+  const onNameSelected = (selectedResult: Result) => {
     // this is where we would get the CIK number of the selected thing
-    setName(selectedName);
+    setName(selectedResult.name);
     setIsNameSelected(true);
     setResults([]);
+    selectEntity(selectedResult, startDate, endDate);
   };
 
   return (
@@ -234,7 +245,7 @@ function App() {
               <ListGroup.Item
                 key={result.cik}
                 className="typeahead-list-group-item"
-                onClick={() => onNameSelected(result.name)}
+                onClick={() => onNameSelected(result)}
               >
                 {result.name}
               </ListGroup.Item>
