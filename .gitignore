@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 .vscode
 *.DS_Store
+=======
+env
+>>>>>>> b49573c (nit: add env to .gitignore)
 .eslintcache
 node_modules/
