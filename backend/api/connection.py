@@ -239,9 +239,9 @@ class APIConnection:
     def search_form_info(
         self,
         cik_number: str,
-        forms: List[str] = ["10-K"],
-        start_date: str = MINIMUM_SEARCH_START_DATE,
-        end_date: str = date.today().isoformat(),
+        forms: List[str],
+        start_date: str,
+        end_date: str,
     ) -> Union[FormData, None]:
         """
         Calls to the SEC EDGAR interface to search through the database to return entities
@@ -329,7 +329,9 @@ class APIConnection:
             raise APIConnectionError(APIConnectionError.END_DATE_INPUT_ERROR, end_date)
         elif start_date > end_date:
             raise APIConnectionError(
-                APIConnectionError.DATE_INPUT_ERROR, start_date, end_date
+                APIConnectionError.DATE_INPUT_ERROR,
+                start_date,
+                end_date,
             )
 
         return self._send_request(
