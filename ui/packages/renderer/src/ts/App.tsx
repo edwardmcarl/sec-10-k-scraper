@@ -126,8 +126,8 @@ async function updateSearchInput(input: string) {
 }
 
 async function selectEntity(res: Result, startDate: Date, endDate: Date){
-  let startDateISO = startDate.toISOString();
-  let endDateISO = endDate.toISOString();
+  let startDateISO = startDate.toISOString().split('T')[0];
+  let endDateISO = endDate.toISOString().split('T')[0];
   console.log('start date: ' + startDateISO);
   console.log('end date: ' + endDateISO);
   let filingResults = await window.requestRPC.procedure('search_form_info', [res.cik, startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number
@@ -163,8 +163,8 @@ function App() {
   };
 
   const handleSearchClick = async () => {
-    let startDateISO = startDate.toISOString();
-    let endDateISO = endDate.toISOString();
+    let startDateISO = startDate.toISOString().split('T')[0];
+    let endDateISO = endDate.toISOString().split('T')[0];
     let filingResults = await window.requestRPC.procedure('search_form_info', [searchBarContents, startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number
   };
   
