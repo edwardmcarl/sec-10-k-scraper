@@ -1,24 +1,23 @@
-import logo from '../img/logo.svg'
-import '../css/App.css'
+import logo from '../img/logo.svg';
+import FracTrac_logo from '../img/2021-FracTracker-logo.png';
+import '../css/App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.min.js';
 import React from 'react';
 import {useState, useEffect} from 'react';
-import {Button, Col, Container, Dropdown, Row, InputGroup, FormControl, FormLabel, Table} from 'react-bootstrap'
+import {Button, Col, Container, Dropdown, Row, InputGroup, FormControl, FormLabel, Table} from 'react-bootstrap';
 import DatePicker from 'react-date-picker';
 
-interface FilingSearchResult {
+// interface FilingSearchResult {
   
-}
+// }
 class Filing {
-  num: number; // number in table
   entityName: string; // name of entity
   cikNumber: string; // cik number
   filingDate: string; // filing date
   documentAddress10k: string; // document address for 10-K
   extractInfo: boolean; // true/false if user wants to extract info from 10-K
-  constructor(numIn: number, entityNameIn: string, cikNumberIn: string, filingDateIn: string, documentAddress10kIn: string, extractInfoIn: boolean) {
-    this.num = numIn;
+  constructor(entityNameIn: string, cikNumberIn: string, filingDateIn: string, documentAddress10kIn: string, extractInfoIn: boolean) {
     this.entityName = entityNameIn;
     this.cikNumber = cikNumberIn;
     this.filingDate = filingDateIn;
@@ -34,6 +33,39 @@ interface ResultsRowProps {
   removeFiling:(filing: Filing)=> void;
 } 
 
+interface AddressData {
+  street1: string;
+  street2: string;
+  city: string;
+  stateOrCountry: string;
+  zipCode: string;
+  stateOrCountryDescription: string;
+}
+
+interface FilingData {
+  reportDate: string;
+  filingDate: string;
+  document: string;
+  form: string;
+  isXBRL: number;
+  isInlineXBRL: number;
+}
+
+interface BulkAddressData {
+  mailing: AddressData;
+  business: AddressData;
+}
+
+interface FormData {
+  cik: string;
+  issuing_entity: string;
+  state_of_incorporation: string;
+  ein: string;
+  forms: Array<string>;
+  address: BulkAddressData;
+  filings: Array<FilingData>;
+}
+
 function ResultsRow(props: ResultsRowProps) {
 
   const handleInfoClick = () => {
@@ -42,22 +74,21 @@ function ResultsRow(props: ResultsRowProps) {
     } else {
       props.addFiling(props.filing);
     }
-  }
+  };
   const getButtonText = () => {
-    return props.isQueued ? "Add to Queue" : "Remove from Queue"; 
-  }
+    return props.isQueued ? 'Add to Queue' : 'Remove from Queue'; 
+  };
   return (
     <tr>
-      <td>{props.filing.num}</td>
       <td>{props.filing.entityName}</td>
       <td>{props.filing.cikNumber}</td>
       <td>{props.filing.filingDate}</td>
       <td>{props.filing.documentAddress10k}</td>
       <td>
-        <Button variant="secondary" onClick={(event) => {handleInfoClick()}}>{getButtonText()}</Button>
+        <Button variant="secondary" onClick={(event) => {handleInfoClick();}}>{getButtonText()}</Button>
       </td>
     </tr>
-  )
+  );
 }
 
 
@@ -67,7 +98,7 @@ function App() {
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate ] = useState(new Date());
   const [filingResultList, setFilingResultList] = useState(new Array<Filing>()); // input data from API
-  const [searchBarContents, setSearchBarContents] = useState("");
+  const [searchBarContents, setSearchBarContents] = useState('');
   //Map that essentially acts as a Set, to track what filings are in the list
   const [filingMap, setFilingMap] = useState(new Map<string,Filing>()); // "queue of filings"
   
@@ -75,19 +106,29 @@ function App() {
    let newFilingMap = new Map<string,Filing>(filingMap);
    newFilingMap.set(f.documentAddress10k, f);
    setFilingMap(newFilingMap);
-  }
+  };
 
   const removeFilingFromMap = (f: Filing) => {
     let newFilingMap = new Map<string,Filing>(filingMap);
     newFilingMap.delete(f.documentAddress10k);
     setFilingMap(newFilingMap);
-  }
+  };
 
   const handleSearchClick = async () => {
-    let startDateISO = startDate.toISOString();
-    let endDateISO = endDate.toISOString();
-    let filingResults = await window.requestRPC.procedure("search_form_info", [searchBarContents, startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number
-  }
+    let startDateISO = startDate.toISOString().split('T')[0];
+    let endDateISO = endDate.toISOString().split('T')[0];
+    console.log(searchBarContents);
+    console.log(startDateISO);
+    console.log(endDateISO);
+    let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [searchBarContents, ['10-K'], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number
+    if(filingResults !== null) {
+    console.log(filingResults);
+      let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, filing.filingDate, filing.document, false));
+      console.log(filingRows);
+      setFilingResultList(filingRows); //takes in something that is a Filing[]
+    }    
+  };
+
   
   return (
   <div> {/* Outer div */}
@@ -96,7 +137,7 @@ function App() {
     <Container>
       <Row>
         <Col md={12}>
-        <img src="../img/SEC-Logo.jpg" alt="" height="150" width="150"></img>  
+        <img src={FracTrac_logo} alt="" height="150" width="auto"></img>  
         <h1>SEC EDGAR 10-K Information Access</h1>
         </Col>
       </Row>
@@ -169,7 +210,6 @@ function App() {
     <Table striped bordered hover id="results-table">
       <thead>
         <tr>
-          <th>#</th>
           <th>Entity Name</th>
           <th>CIK Number</th>
           <th>Filing Date</th>
@@ -192,4 +232,4 @@ function App() {
 
 }
 
-export default App
+export default App;
