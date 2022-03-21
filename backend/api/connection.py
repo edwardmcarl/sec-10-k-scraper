@@ -171,6 +171,8 @@ class APIConnection:
     # Update APIConnectionError.START_DATE_INPUT_ERROR when MINIMUM_SEARCH_START_DATE value changes
     MINIMUM_SEARCH_START_DATE = "1994-01-01"
 
+    MAXIMUM_SEARCH_START_DATE = date.today().isoformat()
+
     def _format_cik(self, cik: int) -> str:
         """
         Helper function that converts the numerical CIK value returned by the EDGAR database (format: \\d{1:10})

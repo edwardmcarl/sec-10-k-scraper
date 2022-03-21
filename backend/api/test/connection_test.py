@@ -98,7 +98,7 @@ class TestAPIConnection(unittest.TestCase):
         self.assertTupleEqual((), exception.values)
 
         with self.assertRaises(APIConnectionError) as cm:
-            self.api_conn.search_form_info(self.real_cik)
+            self.api_conn.search_form_info(self.real_cik, ['10-K'], APIConnection.MINIMUM_SEARCH_START_DATE, APIConnection.MAXIMUM_SEARCH_START_DATE)
         exception = cm.exception
         self.assertEqual(APIConnectionError.CONNECTION_ERROR, exception.message)
         self.assertEqual(APIConnectionError.URL_TYPE_ERROR, exception.type)
@@ -124,7 +124,7 @@ class TestAPIConnection(unittest.TestCase):
         self.assertTupleEqual((), exception.values)
 
         with self.assertRaises(APIConnectionError) as cm:
-            self.api_conn.search_form_info(self.real_cik)
+            self.api_conn.search_form_info(self.real_cik, ['10-K'], APIConnection.MINIMUM_SEARCH_START_DATE, APIConnection.MAXIMUM_SEARCH_START_DATE)
         exception = cm.exception
         self.assertEqual(APIConnectionError.UNEXPECTED_ERROR, exception.message)
         self.assertEqual(APIConnectionError.UNEXPECTED_TYPE_ERROR, exception.type)
@@ -143,7 +143,7 @@ class TestAPIConnection(unittest.TestCase):
 
         mock_gzip.side_effect = Exception()
         with self.assertRaises(APIConnectionError) as cm:
-            self.api_conn.search_form_info(self.real_cik)
+            self.api_conn.search_form_info(self.real_cik, ['10-K'], APIConnection.MINIMUM_SEARCH_START_DATE, APIConnection.MAXIMUM_SEARCH_START_DATE)
         exception = cm.exception
         self.assertEqual(APIConnectionError.UNEXPECTED_ERROR, exception.message)
         self.assertEqual(APIConnectionError.UNEXPECTED_TYPE_ERROR, exception.type)
@@ -182,7 +182,7 @@ class TestAPIConnection(unittest.TestCase):
 
     def test_wrong_cik_number_format(self):
         with self.assertRaises(APIConnectionError) as cm:
-            self.api_conn.search_form_info(self.wrong_cik_format)
+            self.api_conn.search_form_info(self.wrong_cik_format, ['10-K'], APIConnection.MINIMUM_SEARCH_START_DATE, APIConnection.MAXIMUM_SEARCH_START_DATE)
         exception = cm.exception
         self.assertEqual(APIConnectionError.CIK_INPUT_ERROR, exception.message)
         self.assertEqual(APIConnectionError.NO_TYPE_ERROR, exception.type)
@@ -194,7 +194,7 @@ class TestAPIConnection(unittest.TestCase):
                 f"Network connection is needed for this test -> {self.test_correct_cik_number_format_but_fake_cik.__name__}"
             )
         with self.assertRaises(APIConnectionError) as cm:
-            self.api_conn.search_form_info(self.fake_cik)
+            self.api_conn.search_form_info(self.fake_cik, ['10-K'], APIConnection.MINIMUM_SEARCH_START_DATE, APIConnection.MAXIMUM_SEARCH_START_DATE)
         exception = cm.exception
         self.assertEqual(APIConnectionError.NO_CIK_EXISTS_ERROR, exception.message)
         self.assertEqual(APIConnectionError.HTTP_TYPE_ERROR, exception.type)
@@ -202,18 +202,14 @@ class TestAPIConnection(unittest.TestCase):
 
     def test_wrong_date_input_format(self):
         with self.assertRaises(APIConnectionError) as cm:
-            self.api_conn.search_form_info(
-                self.real_cik, start_date=self.wrong_date_format
-            )
+            self.api_conn.search_form_info(self.real_cik, ['10-K'], self.wrong_date_format, APIConnection.MAXIMUM_SEARCH_START_DATE)
         exception = cm.exception
         self.assertEqual(APIConnectionError.START_DATE_FORMAT_ERROR, exception.message)
         self.assertEqual(APIConnectionError.NO_TYPE_ERROR, exception.type)
         self.assertTupleEqual((self.wrong_date_format,), exception.values)
 
         with self.assertRaises(APIConnectionError) as cm:
-            self.api_conn.search_form_info(
-                self.real_cik, end_date=self.wrong_date_format
-            )
+            self.api_conn.search_form_info(self.real_cik, ['10-K'], APIConnection.MINIMUM_SEARCH_START_DATE, self.wrong_date_format)
         exception = cm.exception
         self.assertEqual(APIConnectionError.END_DATE_FORMAT_ERROR, exception.message)
         self.assertEqual(APIConnectionError.NO_TYPE_ERROR, exception.type)
@@ -221,25 +217,21 @@ class TestAPIConnection(unittest.TestCase):
 
     def test_wrong_date_inputs(self):
         with self.assertRaises(APIConnectionError) as cm:
-            self.api_conn.search_form_info(
-                self.real_cik, start_date=self.wrong_start_date
-            )
+            self.api_conn.search_form_info(self.real_cik, ['10-K'], self.wrong_start_date, APIConnection.MAXIMUM_SEARCH_START_DATE)
         exception = cm.exception
         self.assertEqual(APIConnectionError.START_DATE_INPUT_ERROR, exception.message)
         self.assertEqual(APIConnectionError.NO_TYPE_ERROR, exception.type)
         self.assertTupleEqual((self.wrong_start_date,), exception.values)
 
         with self.assertRaises(APIConnectionError) as cm:
-            self.api_conn.search_form_info(self.real_cik, end_date=self.wrong_end_date)
+            self.api_conn.search_form_info(self.real_cik, ['10-K'], APIConnection.MINIMUM_SEARCH_START_DATE, self.wrong_end_date)
         exception = cm.exception
         self.assertEqual(APIConnectionError.END_DATE_INPUT_ERROR, exception.message)
         self.assertEqual(APIConnectionError.NO_TYPE_ERROR, exception.type)
         self.assertTupleEqual((self.wrong_end_date,), exception.values)
 
         with self.assertRaises(APIConnectionError) as cm:
-            self.api_conn.search_form_info(
-                self.real_cik, start_date=self.end_date, end_date=self.start_date
-            )
+            self.api_conn.search_form_info(self.real_cik, ['10-K'], self.end_date, self.start_date)
         exception = cm.exception
         self.assertEqual(APIConnectionError.DATE_INPUT_ERROR, exception.message)
         self.assertEqual(APIConnectionError.NO_TYPE_ERROR, exception.type)
@@ -256,7 +248,7 @@ class TestAPIConnection(unittest.TestCase):
             self.skipTest(
                 f"Network connection is needed for this test -> {self.test_no_forms_input.__name__}"
             )
-        self.assertEqual(None, self.api_conn.search_form_info(self.real_cik, forms=[]))
+        self.assertEqual(None, self.api_conn.search_form_info(self.real_cik, [], APIConnection.MINIMUM_SEARCH_START_DATE, APIConnection.MAXIMUM_SEARCH_START_DATE))
 
     def test_legit_request(self):
         # Reason for warning supression: https://stackoverflow.com/a/55411485
@@ -268,7 +260,7 @@ class TestAPIConnection(unittest.TestCase):
                 f"Network connection is needed for this test -> {self.test_legit_request.__name__}"
             )
 
-        results = self.api_conn.search_form_info(self.real_cik)
+        results = self.api_conn.search_form_info(self.real_cik, ['10-K'], APIConnection.MINIMUM_SEARCH_START_DATE, APIConnection.MAXIMUM_SEARCH_START_DATE)
 
         self.assertNotEqual(results, None)
         self.assertEqual(self.real_cik, results.cik)
