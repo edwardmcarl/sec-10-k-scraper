@@ -179,9 +179,6 @@ class TestAPIConnection(unittest.TestCase):
             )
         results = self.api_conn.search(self.search_key_results)
         self.assertTrue(len(results) != 0)
-        keys = ["cik", "entity"]
-        for key in keys:
-            self.assertTrue(key in results[0])
 
     def test_wrong_cik_number_format(self):
         with self.assertRaises(APIConnectionError) as cm:
@@ -259,9 +256,7 @@ class TestAPIConnection(unittest.TestCase):
             self.skipTest(
                 f"Network connection is needed for this test -> {self.test_no_forms_input.__name__}"
             )
-        self.assertListEqual(
-            [], self.api_conn.search_form_info(self.real_cik, forms=[])
-        )
+        self.assertEqual(None, self.api_conn.search_form_info(self.real_cik, forms=[]))
 
     def test_legit_request(self):
         # Reason for warning supression: https://stackoverflow.com/a/55411485
@@ -274,48 +269,10 @@ class TestAPIConnection(unittest.TestCase):
             )
 
         results = self.api_conn.search_form_info(self.real_cik)
-        self.assertTrue(len(results) != 0)
-        keys = [
-            "cik",
-            "issuing_entity",
-            "state_of_incorporation",
-            "ein",
-            "address",
-            "filings",
-        ]
-        for key in keys:
-            self.assertTrue(key in results, f"Missing key: {key}")
 
-        self.assertEqual(self.real_cik, results["cik"])
-        self.assertListEqual(["10-K"], results["forms"])
-        address_obj = results["address"]
-        keys = ["mailing", "business"]
-        for key in keys:
-            self.assertTrue(key in address_obj, f"Missing key: {key}")
-
-        keys = [
-            "street1",
-            "street2",
-            "city",
-            "stateOrCountry",
-            "zipCode",
-            "stateOrCountryDescription",
-        ]
-        for key in keys:
-            self.assertTrue(key in address_obj["mailing"])
-            self.assertTrue(key in address_obj["business"])
-
-        filing_obj = results["filings"][0]
-        keys = [
-            "reportDate",
-            "filingDate",
-            "document",
-            "form",
-            "isXBRL",
-            "isInlineXBRL",
-        ]
-        for key in keys:
-            self.assertTrue(key in filing_obj, f"Missing key: {key}")
+        self.assertNotEqual(results, None)
+        self.assertEqual(self.real_cik, results.cik)
+        self.assertListEqual(["10-K"], results.forms)
 
 
 if __name__ == "__main__":
