@@ -69,13 +69,13 @@ function ResultsRow(props: ResultsRowProps) {
 }
 
 // experimenting https://devrecipes.net/typeahead-with-react-hooks-and-bootstrap/
-let dropdownData: (Result | undefined)[] = [
+let dropdownData: (Result | undefined)[];/* [
   { cik: '1', name: 'devrecipes.net' },
   { cik: '2', name: 'devrecipes' },
   { cik: '3', name: 'devrecipe' },
   { cik: '4', name: 'dev recipes' },
   { cik: '5', name: 'development' },
-];
+]; */
 
 const mockResults = (keyword: string) => {
   return new Promise((res, rej) => {
@@ -102,37 +102,40 @@ class WhateverFiling {
   }
 }
 
+// called by handleInputChange, has to be async
 async function updateSearchInput(input: string) {
   // get the new input
   const searchInput = input;
   // call search function in API library created by Sena
-  // would also catch errors
-    // let entityList = search(searchInput);
+  // TO DO would also catch errors
   let entityList = await window.requestRPC.procedure('search', [searchInput]);
-  
+  // convert entityList to usable form
   let entityClassList = (entityList as searchResult[]).map((member) => { 
     if ((member as searchResult).cik !== undefined && (member as searchResult).entity !== undefined) { //type guard
       return new Result(member.cik, member.entity);
     }
   });
-  
+  // update the dropdownData
   dropdownData = entityClassList;
+  // for development purposes
   console.log(entityClassList);
   console.log('searched');
-
-  // potentially a for loop? unsure how to convert python dictionaries to javascript
-  // update dropdown
-    // UI feature to be implemented later?
 }
 
+// called by onNameSelected, has to be async
 async function selectEntity(res: Result, startDate: Date, endDate: Date){
+  // get the date strings
   let startDateISO = startDate.toISOString().split('T')[0];
   let endDateISO = endDate.toISOString().split('T')[0];
+  // for development purposes
   console.log('start date: ' + startDateISO);
   console.log('end date: ' + endDateISO);
+  // call API to get filing information for selected entity and dates
   let filingResults = await window.requestRPC.procedure('search_form_info', [res.cik, startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number
+  // for development purposes
   console.log('selected entity');
   console.log(filingResults);
+  // TO DO would call function to update results table below
 }
 
 function App() {
@@ -141,6 +144,8 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [name, setName] = useState('');
   const [isNameSelected, setIsNameSelected] = useState(false);
+  // adding something to store entire result
+  const [result, setResult] = useState(new Result('', ''));
 
   // regularly scheduled programming
   const [startDate, setStartDate] = useState(new Date());
@@ -193,11 +198,14 @@ function App() {
   };
 
   const onNameSelected = (selectedResult: Result) => {
-    // this is where we would get the CIK number of the selected thing
+    // user clicks the little box with the appropriate entity
+    // save information about selected entity
     setName(selectedResult.name);
+    setResult(selectedResult);
     setIsNameSelected(true);
     setResults([]);
-    selectEntity(selectedResult, startDate, endDate);
+    // call selectEntity
+    selectEntity(result, startDate, endDate);
   };
 
   return (
