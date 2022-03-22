@@ -155,21 +155,28 @@ async function updateSearchInput(input: string) {
   console.log('searched');
 }
 
-// called by onNameSelected, has to be async
-async function selectEntity(res: Result, startDate: Date, endDate: Date){
-  // get the date strings
-  let startDateISO = startDate.toISOString().split('T')[0];
-  let endDateISO = endDate.toISOString().split('T')[0];
-  // for development purposes
-  console.log('start date: ' + startDateISO);
-  console.log('end date: ' + endDateISO);
-  // call API to get filing information for selected entity and dates
-  let filingResults = await window.requestRPC.procedure('search_form_info', [res.cik, startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number
-  // for development purposes
-  console.log('selected entity');
-  console.log(filingResults);
-  // TO DO would call function to update results table below
-}
+// // called by onNameSelected, has to be async
+// async function selectEntity(res: Result, startDate: Date, endDate: Date){
+//   // get the date strings
+//   let startDateISO = startDate.toISOString().split('T')[0];
+//   let endDateISO = endDate.toISOString().split('T')[0];
+//   // for development purposes
+//   console.log('start date: ' + startDateISO);
+//   console.log('end date: ' + endDateISO);
+//   // call API to get filing information for selected entity and dates
+//   let filingResults = await window.requestRPC.procedure('search_form_info', [res.cik, startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number
+//   // for development purposes
+//   console.log('selected entity');
+//   console.log(filingResults);
+//   // TO DO would call function to update results table below
+//   let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [searchBarContents, ['10-K'], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
+//     if(filingResults !== null) {
+//     console.log(filingResults);
+//       let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, filing.filingDate, filing.document, false));
+//       console.log(filingRows);
+//       setFilingResultList(filingRows); //takes in something that is a Filing[]
+//     }
+// }
 
 function App() {
   // experimenting https://devrecipes.net/typeahead-with-react-hooks-and-bootstrap/
@@ -226,6 +233,7 @@ function App() {
     // even if we've selected already an item from the list, we should reset it since it's been changed
     setIsNameSelected(false);
     // clean previous results, as would be the case if we get the results from a server
+    // TO DO figure out how this works. and make it better. catch errors, basically.
     setResults([]);
     if (nameValue.length > 1) {
       setIsLoading(true);
@@ -240,15 +248,27 @@ function App() {
     }
   };
 
-  const onNameSelected = (selectedResult: Result) => {
+  const onNameSelected = async (selectedResult: Result) => {
     // user clicks the little box with the appropriate entity
     // save information about selected entity
     setName(selectedResult.name);
     setResult(selectedResult);
     setIsNameSelected(true);
     setResults([]);
+    let startDateISO = startDate.toISOString().split('T')[0];
+    let endDateISO = endDate.toISOString().split('T')[0];
+    console.log(selectedResult.cik);
+    console.log(startDateISO);
+    console.log(endDateISO);
+    let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [selectedResult.cik, ['10-K'], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
+    if(filingResults !== null) {
+    console.log(filingResults);
+      let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, filing.filingDate, filing.document, false));
+      console.log(filingRows);
+      setFilingResultList(filingRows); //takes in something that is a Filing[]
+    }
     // call selectEntity
-    selectEntity(result, startDate, endDate);
+    //selectEntity(result, startDate, endDate);
   };
 
   return (
@@ -291,6 +311,7 @@ function App() {
         />
         <ListGroup className="typeahead-list-group">
           {!isNameSelected &&
+            results !== undefined &&
             results.length > 0 &&
             results.map((result: Result) => (
               <ListGroup.Item
@@ -298,10 +319,10 @@ function App() {
                 className="typeahead-list-group-item"
                 onClick={() => onNameSelected(result)}
               >
-                {result.name}
+                {result.cik + ' | ' + result.name}
               </ListGroup.Item>
             ))}
-          {!results.length && isLoading && (
+          {results !== undefined && !results.length && isLoading && (
             <div className="typeahead-spinner-container">
               <Spinner animation="border" />
             </div>
