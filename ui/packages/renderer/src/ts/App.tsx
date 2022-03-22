@@ -67,7 +67,6 @@ interface FormData {
 }
 
 function ResultsRow(props: ResultsRowProps) {
-
   const handleInfoClick = () => {
     if (props.isQueued) {
       props.removeFiling(props.filing);
@@ -76,7 +75,10 @@ function ResultsRow(props: ResultsRowProps) {
     }
   };
   const getButtonText = () => {
-    return props.isQueued ? 'Add to Queue' : 'Remove from Queue'; 
+    return props.isQueued ? 'Remove from Queue': 'Add to Queue'; 
+  };
+  const getButtonColorScheme = () => {
+    return props.isQueued ? 'danger': 'primary';
   };
   return (
     <tr>
@@ -84,14 +86,12 @@ function ResultsRow(props: ResultsRowProps) {
       <td>{props.filing.cikNumber}</td>
       <td>{props.filing.filingDate}</td>
       <td>{props.filing.documentAddress10k}</td>
-      <td>
-        <Button variant="secondary" onClick={(event) => {handleInfoClick();}}>{getButtonText()}</Button>
+      <td align="center">
+        <Button variant={getButtonColorScheme()} onClick={(event) => {handleInfoClick();}}>{getButtonText()}</Button>
       </td>
     </tr>
   );
 }
-
-
 
 function App() {
   
@@ -120,7 +120,7 @@ function App() {
     console.log(searchBarContents);
     console.log(startDateISO);
     console.log(endDateISO);
-    let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [searchBarContents, ['10-K'], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number
+    let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [searchBarContents, ['10-K'], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
     if(filingResults !== null) {
     console.log(filingResults);
       let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, filing.filingDate, filing.document, false));
@@ -207,7 +207,7 @@ function App() {
 
   {/* Table */}
   <Container>
-    <Table striped bordered hover id="results-table">
+    <Table striped bordered hover id="results-table" table-layout="fixed">
       <thead>
         <tr>
           <th>Entity Name</th>
