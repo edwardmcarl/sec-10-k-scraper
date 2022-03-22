@@ -102,28 +102,30 @@ function ResultsRow(props: ResultsRowProps) {
 }
 
 // experimenting https://devrecipes.net/typeahead-with-react-hooks-and-bootstrap/
-let dropdownData: (Result | undefined)[];/* [
+let dropdownData: (Result | undefined)[] = [
   { cik: '1', name: 'devrecipes.net' },
   { cik: '2', name: 'devrecipes' },
   { cik: '3', name: 'devrecipe' },
   { cik: '4', name: 'dev recipes' },
   { cik: '5', name: 'development' },
-]; */
-
-const mockResults = (keyword: string) => {
-  return new Promise((res, rej) => {
-    setTimeout(() => {
-      const searchResults = dropdownData;
-      res(searchResults);
-    }, 500);
-  });
-};
+];
 
 // type for the result of the search() Python call
 interface searchResult {
   cik: string,
   entity: string
 }
+
+const mockResults = (keyword: string) => {
+  return new Promise((res, rej) => {
+    setTimeout(() => {
+      //const searchResults = dropdownData;
+      const searchResults = dropdownData.filter((item) => item !== undefined && item.name.includes(keyword));
+      res(searchResults);
+    }, 500);
+  });
+};
+
 
 // class for search results entity-cik pairs
 class WhateverFiling {
@@ -229,7 +231,7 @@ function App() {
     setName(nameValue);
     // adapting for senior project code
     setSearchBarContents(nameValue);
-    updateSearchInput(nameValue);
+    // updateSearchInput(nameValue);
     // even if we've selected already an item from the list, we should reset it since it's been changed
     setIsNameSelected(false);
     // clean previous results, as would be the case if we get the results from a server
@@ -255,7 +257,8 @@ function App() {
     setResult(selectedResult);
     setIsNameSelected(true);
     setResults([]);
-    let startDateISO = startDate.toISOString().split('T')[0];
+    // commenting out for hard coding purposes
+    /* let startDateISO = startDate.toISOString().split('T')[0];
     let endDateISO = endDate.toISOString().split('T')[0];
     console.log(selectedResult.cik);
     console.log(startDateISO);
@@ -266,7 +269,7 @@ function App() {
       let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, filing.filingDate, filing.document, false));
       console.log(filingRows);
       setFilingResultList(filingRows); //takes in something that is a Filing[]
-    }
+    } */
     // call selectEntity
     //selectEntity(result, startDate, endDate);
   };
