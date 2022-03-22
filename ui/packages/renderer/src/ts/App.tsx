@@ -188,8 +188,12 @@ function App() {
   const [result, setResult] = useState(new Result('', ''));
 
   // regularly scheduled programming
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate ] = useState(new Date());
+  let oneYearAgo = new Date();
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+  let currentDate = new Date();
+  currentDate.setUTCHours(0,1,0,0); // start of day
+  const [startDate, setStartDate] = useState(oneYearAgo);
+  const [endDate, setEndDate ] = useState(currentDate);
   const [filingResultList, setFilingResultList] = useState(new Array<Filing>()); // input data from API
   const [searchBarContents, setSearchBarContents] = useState('');
   //Map that essentially acts as a Set, to track what filings are in the list
@@ -210,10 +214,10 @@ function App() {
   const handleSearchClick = async () => {
     let startDateISO = startDate.toISOString().split('T')[0];
     let endDateISO = endDate.toISOString().split('T')[0];
-    console.log(searchBarContents);
+    console.log(result.cik);
     console.log(startDateISO);
     console.log(endDateISO);
-    let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [searchBarContents, ['10-K'], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
+    let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [result.cik, ['10-K'], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
     if(filingResults !== null) {
     console.log(filingResults);
       let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, filing.filingDate, filing.document, false));
@@ -257,7 +261,7 @@ function App() {
     setResults([]);
     let startDateISO = startDate.toISOString().split('T')[0];
     let endDateISO = endDate.toISOString().split('T')[0];
-    console.log(selectedResult.cik);
+    console.log(selectedResult.cik); //TODO use 'result' instead; handle timing of React updates
     console.log(startDateISO);
     console.log(endDateISO);
     let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [selectedResult.cik, ['10-K'], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar

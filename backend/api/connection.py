@@ -314,6 +314,7 @@ class APIConnection:
     ) -> Dict[str, Any]:
         # Making request to server
         data_api = f"https://data.sec.gov/submissions/{request_document}"
+        print(data_api)
         hdrs = {
             "Host": "data.sec.gov",
             "User-Agent": "Lafayette College yevenyos@lafayette.edu",
