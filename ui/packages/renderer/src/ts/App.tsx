@@ -396,7 +396,7 @@ function App() {
 
   {/* Error Message */}
   <Container id="errorDiv">
-    <Row>
+    <Row className="mb-3">
       <Col>
 
       </Col>
@@ -414,7 +414,7 @@ function App() {
 
   {/* Table */}
   <Container>
-    <Row className="mb-3">
+    <Row>
       <Col>
         <Table striped bordered hover id="results-table" table-layout="fixed">
           <thead>
@@ -468,6 +468,11 @@ function App() {
               ))} */}
             </tbody>
           </Table>
+        </Col>
+      </Row>
+      <Row className="mb-3">
+        <Col>
+          <Form.Check id = "NERCheck" type="checkbox" label="Apply Named Entity Recognition to Queue" />
         </Col>
       </Row>
       <Row className="mb-3">
