@@ -5,7 +5,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.min.js';
 import React from 'react';
 import {useState, useEffect} from 'react';
-import {Button, Col, Container, Dropdown, Row, InputGroup, FormControl, FormLabel, Table, ListGroup, Spinner, Form} from 'react-bootstrap';
+import {Button, Col, Container, Dropdown, Row, InputGroup, FormControl, FormLabel, Table, ListGroup, Spinner, Form, Offcanvas} from 'react-bootstrap';
 import DatePicker from 'react-date-picker';
 
 // interface FilingSearchResult {
@@ -40,6 +40,11 @@ interface ResultsRowProps {
   addFiling:(filing: Filing)=> void;
   removeFiling:(filing: Filing)=> void;
 } 
+
+interface QueueRowProps {
+  filing: Filing
+  removeFromQueue:(filing: Filing)=> void;
+}
 
 interface AddressData {
   street1: string;
@@ -96,6 +101,21 @@ function ResultsRow(props: ResultsRowProps) {
       <td>{props.filing.documentAddress10k}</td>
       <td align="center">
         <Button variant={getButtonColorScheme()} onClick={(event) => {handleInfoClick();}}>{getButtonText()}</Button>
+      </td>
+    </tr>
+  );
+}
+
+function QueueRow(props: QueueRowProps) {
+  const handleRemoveClick = () => {
+    props.removeFromQueue(props.filing);
+  };
+  return (
+    <tr>
+      <td>{props.filing.entityName}</td>
+      <td>{props.filing.filingDate}</td>
+      <td align="center">
+        <Button variant="danger" onClick={(event) => {handleRemoveClick();}}>X</Button>
       </td>
     </tr>
   );
@@ -186,6 +206,11 @@ function App() {
   const [isNameSelected, setIsNameSelected] = useState(false);
   // adding something to store entire result
   const [result, setResult] = useState(new Result('', ''));
+  
+  // For queue/canvas
+  const [show, setShow] = useState(false);
+  const handleClose = () => setShow(false);
+  const handleShow = () => setShow(true);
 
   // regularly scheduled programming
   let oneYearAgo = new Date();
@@ -209,6 +234,10 @@ function App() {
     let newFilingMap = new Map<string,Filing>(filingMap);
     newFilingMap.delete(f.documentAddress10k);
     setFilingMap(newFilingMap);
+  };
+
+  const removeFilingFromQueue = (f: Filing) => {
+    // NEED TO WRITE
   };
 
   const handleSearchClick = async () => {
@@ -304,7 +333,7 @@ function App() {
 
     {/* Search Bar Two (Experimenting) */}
     <Container>
-      <Form.Group className="typeahead-form-group">
+      <Form.Group className="typeahead-form-group mb-3">
         <Form.Control
           placeholder="Entity/CIK"
           id="searchInput"
@@ -337,20 +366,21 @@ function App() {
 
   {/* Start and End Dates*/}
   <Container>
-    <Row>
+    <Row className="mb-3">
       <Col>
-      <text>Start Date:</text>
+      <text>Start Date: </text>
       <DatePicker onChange={setStartDate} value={startDate}/>
       </Col>
       <Col>
+      <text>End Date: </text>
       <DatePicker onChange={setEndDate} value={endDate} />
       </Col>
     </Row>
   </Container>
 
-    {/* Choose File */}
-    <Container>
-      <Row>
+  {/* Choose File */}
+  <Container>
+    <Row>
         <Col>
           <label htmlFor="fileUpload">Read from file (.txt):</label>
         </Col>
@@ -362,48 +392,91 @@ function App() {
           </form>
         </Col>
       </Row>
-    </Container>
+  </Container>
 
-    {/* Error Message */}
-    <Container id="errorDiv">
-      <Row>
-        <Col>
+  {/* Error Message */}
+  <Container id="errorDiv">
+    <Row>
+      <Col>
 
-        </Col>
-      </Row>
-    </Container>
-
-    <Container id="SearchButton">
-      <Row>
-        <Col>
-          <Button variant="primary" id="search-button" onClick={handleSearchClick}>Search</Button>
-        </Col>
-      </Row>
-
-    </Container>
+      </Col>
+    </Row>
+  </Container>
+  
+  {/* Search Button */}
+  <Container id="SearchButton">
+    <Row className="mb-3">
+      <Col>
+        <Button variant="primary" id="search-button" onClick={handleSearchClick}>Search</Button>
+      </Col>
+    </Row>
+  </Container>
 
   {/* Table */}
   <Container>
-    <Table striped bordered hover id="results-table" table-layout="fixed">
-      <thead>
-        <tr>
-          <th>Entity Name</th>
-          <th>CIK Number</th>
-          <th>Filing Date</th>
-          <th>10-K Document</th>
-          <th>Extract Info?</th>
-        </tr>
-      </thead>
-      <tbody>
-        {filingResultList.map((filing) => (
-          <ResultsRow key = {filing.documentAddress10k} filing={filing} isQueued={filingMap.has(filing.documentAddress10k)} addFiling={addFilingToMap} removeFiling={removeFilingFromMap}></ResultsRow>
-        ))}
-      </tbody>
-
-    </Table>
+    <Row className="mb-3">
+      <Col>
+        <Table striped bordered hover id="results-table" table-layout="fixed">
+          <thead>
+            <tr>
+              <th>Entity Name</th>
+              <th>CIK Number</th>
+              <th>Filing Date</th>
+              <th>10-K Document</th>
+              <th>Extract Info?</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filingResultList.map((filing) => (
+              <ResultsRow key = {filing.documentAddress10k} filing={filing} isQueued={filingMap.has(filing.documentAddress10k)} addFiling={addFilingToMap} removeFiling={removeFilingFromMap}></ResultsRow>
+            ))}
+          </tbody>
+        </Table>
+      </Col>
+    </Row>
   </Container>
 
+  {/* Show Queue Button */}
+  <Container>
+    <Row className="mb-3">
+      <Col>
+        <Button variant="primary" onClick={handleShow}>Show Queue</Button>
+      </Col>
+    </Row>
+  </Container>
 
+  {/* Queue drawer/canvas */}
+  <Offcanvas show={show} onHide={handleClose} placement='end'>
+    <Offcanvas.Header closeButton>
+      <Offcanvas.Title>Queue</Offcanvas.Title>
+    </Offcanvas.Header>
+    <Offcanvas.Body>
+      <Row className="mb-3">
+        <Col> 
+          <Table striped bordered hover id="queue-table" table-layout="fixed">
+            <thead>
+              <tr>
+                <th>Entity Name</th>
+                <th>Filing Date</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {/* TO BE CHANGED */}
+              {/* {filingResultsList.map((filing) => (
+                <QueueRow key = {filing.documentAddress10k} filing={filing} removeFromQueue={removeFilingFromMap}></QueueRow>
+              ))} */}
+            </tbody>
+          </Table>
+        </Col>
+      </Row>
+      <Row className="mb-3">
+        <Col>
+          <Button variant="primary" onClick={handleShow}>Extract Information</Button>
+        </Col>
+      </Row>
+    </Offcanvas.Body>
+  </Offcanvas>
   </div>
   );
 
