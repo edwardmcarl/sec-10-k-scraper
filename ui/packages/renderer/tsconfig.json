@@ -2,13 +2,17 @@
   "compilerOptions": {
     "module": "esnext",
     "target": "esnext",
+    "useDefineForClassFields": true,
+    "allowJs": false,
     "sourceMap": false,
     "moduleResolution": "Node",
     "allowSyntheticDefaultImports": true,
-    "skipLibCheck": true,
+    "skipLibCheck": false,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "isolatedModules": false,
-    "jsx":"react",
+    "isolatedModules": true,
+    "jsx":"react-jsx",
     "types" : ["node"],
     "baseUrl": ".",
     "paths": {
@@ -25,7 +29,7 @@
     "types/**/*.d.ts",
     "../../types/**/*.d.ts",
     "../preload/contracts.d.ts"
-, "src/js/index.ts"  ],
+, "src/ts/index.ts"  ],
   "exclude": [
     "**/*.spec.ts",
     "**/*.test.ts",
