@@ -86,6 +86,8 @@ class TestAPIConnection(unittest.TestCase):
         self.end_date = "2020-02-05"
         self.no_forms = []
         self.forms = ["10-k"]
+        self.unsupported_form = '40-33'
+        self.wrong_form = 'I-DO-NOT-EXIST'
 
     @patch("connection.urlopen")
     def test_no_internet_connection(self, mock_urlopen):
@@ -255,13 +257,24 @@ class TestAPIConnection(unittest.TestCase):
         )
 
     def test_no_forms_input(self):
-        if not self._conn:
-            self.skipTest(
-                f"Network connection is needed for this test -> {self.test_no_forms_input.__name__}"
-            )
-        self.assertListEqual(
-            [], self.api_conn.search_form_info(self.real_cik, forms=[])
+        self.assertEqual(
+            {}, self.api_conn.search_form_info(self.real_cik, forms=[])
         )
+
+    def test_wrong_or_unsupported_forms_input(self):
+        with self.assertRaises(APIConnectionError) as cm:
+            self.api_conn.search_form_info(self.real_cik, forms=[self.wrong_form, "10-K"])
+        exception = cm.exception
+        self.assertEqual(APIConnectionError.FORM_KIND_ERROR, exception.message)
+        self.assertEqual(APIConnectionError.NO_TYPE_ERROR, exception.type)
+        self.assertTupleEqual((self.wrong_form,), exception.values)
+
+        with self.assertRaises(APIConnectionError) as cm:
+            self.api_conn.search_form_info(self.real_cik, forms=[self.unsupported_form, "10-K"])
+        exception = cm.exception
+        self.assertEqual(APIConnectionError.FORM_KIND_ERROR, exception.message)
+        self.assertEqual(APIConnectionError.NO_TYPE_ERROR, exception.type)
+        self.assertTupleEqual((self.unsupported_form,), exception.values)
 
     def test_legit_request(self):
         # Reason for warning supression: https://stackoverflow.com/a/55411485
