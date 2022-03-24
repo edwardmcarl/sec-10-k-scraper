@@ -128,7 +128,7 @@ class APIConnection:
     # Update APIConnectionError.START_DATE_INPUT_ERROR when MINIMUM_SEARCH_START_DATE value changes
     MINIMUM_SEARCH_START_DATE = "1994-01-01"
 
-    ALLOWED_FORMS = ['10-K', '10-Q', '20-F']
+    ALLOWED_FORMS = ["10-K", "10-Q", "20-F"]
 
     def _format_cik(self, cik: int) -> str:
         """
@@ -274,7 +274,7 @@ class APIConnection:
 
         for item in forms_updated:
             if item not in APIConnection.ALLOWED_FORMS:
-                raise(APIConnectionError(APIConnectionError.FORM_KIND_ERROR, item))
+                raise (APIConnectionError(APIConnectionError.FORM_KIND_ERROR, item))
 
         if not re.match(r"^CIK\d{10}$", cik_number_updated):
             raise APIConnectionError(APIConnectionError.CIK_INPUT_ERROR, cik_number)
@@ -323,7 +323,6 @@ class APIConnection:
     ) -> Dict[str, Any]:
         # Making request to server
         data_api = f"https://data.sec.gov/submissions/{request_document}"
-        print(data_api)
         hdrs = {
             "Host": "data.sec.gov",
             "User-Agent": "Lafayette College yevenyos@lafayette.edu",

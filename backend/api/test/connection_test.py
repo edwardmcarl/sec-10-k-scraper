@@ -86,8 +86,8 @@ class TestAPIConnection(unittest.TestCase):
         self.end_date = "2020-02-05"
         self.no_forms = []
         self.forms = ["10-k"]
-        self.unsupported_form = '40-33'
-        self.wrong_form = 'I-DO-NOT-EXIST'
+        self.unsupported_form = "40-33"
+        self.wrong_form = "I-DO-NOT-EXIST"
 
     @patch("connection.urlopen")
     def test_no_internet_connection(self, mock_urlopen):
@@ -257,20 +257,22 @@ class TestAPIConnection(unittest.TestCase):
         )
 
     def test_no_forms_input(self):
-        self.assertEqual(
-            {}, self.api_conn.search_form_info(self.real_cik, forms=[])
-        )
+        self.assertEqual({}, self.api_conn.search_form_info(self.real_cik, forms=[]))
 
     def test_wrong_or_unsupported_forms_input(self):
         with self.assertRaises(APIConnectionError) as cm:
-            self.api_conn.search_form_info(self.real_cik, forms=[self.wrong_form, "10-K"])
+            self.api_conn.search_form_info(
+                self.real_cik, forms=[self.wrong_form, "10-K"]
+            )
         exception = cm.exception
         self.assertEqual(APIConnectionError.FORM_KIND_ERROR, exception.message)
         self.assertEqual(APIConnectionError.NO_TYPE_ERROR, exception.type)
         self.assertTupleEqual((self.wrong_form,), exception.values)
 
         with self.assertRaises(APIConnectionError) as cm:
-            self.api_conn.search_form_info(self.real_cik, forms=[self.unsupported_form, "10-K"])
+            self.api_conn.search_form_info(
+                self.real_cik, forms=[self.unsupported_form, "10-K"]
+            )
         exception = cm.exception
         self.assertEqual(APIConnectionError.FORM_KIND_ERROR, exception.message)
         self.assertEqual(APIConnectionError.NO_TYPE_ERROR, exception.type)
