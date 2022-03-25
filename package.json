@@ -9,7 +9,7 @@
     "postinstall": "npm run postinstall:backend && npm run postinstall:frontend",
     "postinstall:backend": "cd backend && poetry install",
     "postinstall:frontend": "cd ui && npm install",
-    "build": "npm run build:backend && npm run build:frontend",
+    "build:full": "npm run build:backend && npm run build:frontend",
     "build:backend": "cd backend && poetry run pypyr pypyr/quality-check && poetry run pypyr pypyr/build-backend",
     "build:frontend": "cd ui && npm run compile"
   },
