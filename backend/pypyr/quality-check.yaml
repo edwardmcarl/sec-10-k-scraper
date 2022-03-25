@@ -48,9 +48,7 @@ steps:
   - name: pypyr.steps.echo
     in:
       echoMe: --- Typechecking ---
-  - name: pypyr.steps.cmd
-    in:
-      cmd: pwd
+
   - name: pypyr.steps.cmd
     in:
      cmd: poetry run mypy .
