@@ -1,0 +1,19 @@
+steps:
+
+ - name: pypyr.steps.echo
+   comment: announce start of python 
+   in:
+     echoMe: --- Starting Python Build ---
+
+ - name: pypyr.steps.cmd
+   in:
+    cmd: poetry run pyinstaller --onefile backend_server.py
+ 
+ - name: helpers.move-file
+   in:
+     from: ./dist
+     to: ../ui/extraResources
+
+ - name: pypyr.steps.echo
+   in:
+    echoMe: Moved Python executable into extraResources. Ready to build Electron app.
