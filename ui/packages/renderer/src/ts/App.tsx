@@ -37,12 +37,13 @@ class Filing {
 interface ResultsRowProps {
   filing: Filing;
   isQueued: boolean;
-  addFiling:(filing: Filing)=> void;
-  removeFiling:(filing: Filing)=> void;
+  addFilingToQueue:(filing: Filing)=> void;
+  removeFilingFromQueue:(filing: Filing)=> void;
 } 
 
 interface QueueRowProps {
   filing: Filing
+  addToQueue:(filing: Filing)=> void;
   removeFromQueue:(filing: Filing)=> void;
 }
 
@@ -82,9 +83,11 @@ interface FormData {
 function ResultsRow(props: ResultsRowProps) {
   const handleInfoClick = () => {
     if (props.isQueued) {
-      props.removeFiling(props.filing);
+      props.removeFilingFromQueue(props.filing);
+      console.log('REMOVED ' + props.filing.filingDate + ' FROM QUEUE');
     } else {
-      props.addFiling(props.filing);
+      props.addFilingToQueue(props.filing);
+      console.log('ADDED ' + props.filing.filingDate + ' TO QUEUE');
     }
   };
   const getButtonText = () => {
@@ -222,22 +225,18 @@ function App() {
   const [filingResultList, setFilingResultList] = useState(new Array<Filing>()); // input data from API
   const [searchBarContents, setSearchBarContents] = useState('');
   //Map that essentially acts as a Set, to track what filings are in the list
-  const [filingMap, setFilingMap] = useState(new Map<string,Filing>()); // "queue of filings"
-  
-  const addFilingToMap = (f: Filing) => {
-   let newFilingMap = new Map<string,Filing>(filingMap);
-   newFilingMap.set(f.documentAddress10k, f);
-   setFilingMap(newFilingMap);
+  const [queueFilingMap, setQueueFilingMap] = useState(new Map<string,Filing>()); // "queue of filings"
+
+  const addQueueFilingToMap = (f: Filing) => {
+   let newQueueFilingMap = new Map<string,Filing>(queueFilingMap);
+   newQueueFilingMap.set(f.documentAddress10k, f);
+   setQueueFilingMap(newQueueFilingMap);
   };
 
-  const removeFilingFromMap = (f: Filing) => {
-    let newFilingMap = new Map<string,Filing>(filingMap);
-    newFilingMap.delete(f.documentAddress10k);
-    setFilingMap(newFilingMap);
-  };
-
-  const removeFilingFromQueue = (f: Filing) => {
-    // NEED TO WRITE
+  const removeQueueFilingFromMap = (f: Filing) => {
+    let newQueueFilingMap = new Map<string,Filing>(queueFilingMap);
+    newQueueFilingMap.delete(f.documentAddress10k);
+    setQueueFilingMap(newQueueFilingMap);
   };
 
   const handleSearchClick = async () => {
@@ -428,7 +427,13 @@ function App() {
           </thead>
           <tbody>
             {filingResultList.map((filing) => (
-              <ResultsRow key = {filing.documentAddress10k} filing={filing} isQueued={filingMap.has(filing.documentAddress10k)} addFiling={addFilingToMap} removeFiling={removeFilingFromMap}></ResultsRow>
+              <ResultsRow 
+              key = {filing.documentAddress10k} 
+              filing={filing} 
+              isQueued={queueFilingMap.has(filing.documentAddress10k)} 
+              addFilingToQueue={addQueueFilingToMap} 
+              removeFilingFromQueue={removeQueueFilingFromMap}
+              ></ResultsRow>
             ))}
           </tbody>
         </Table>
@@ -463,9 +468,14 @@ function App() {
             </thead>
             <tbody>
               {/* TO BE CHANGED */}
-              {/* {filingResultsList.map((filing) => (
-                <QueueRow key = {filing.documentAddress10k} filing={filing} removeFromQueue={removeFilingFromMap}></QueueRow>
-              ))} */}
+              {Array.from(queueFilingMap.values()).map(((filing) => (
+                <QueueRow 
+                key = {filing.documentAddress10k} 
+                filing={filing} 
+                addToQueue={addQueueFilingToMap} 
+                removeFromQueue={removeQueueFilingFromMap}
+                ></QueueRow>
+              )))}
             </tbody>
           </Table>
         </Col>
