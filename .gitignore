@@ -1,2 +1,5 @@
-
+.vscode
+*.DS_Store
 .eslintcache
+**/node_modules
+node_modules/.bin/husky
