@@ -53,4 +53,11 @@ steps:
     in:
      cmd: poetry run mypy .
  
+  - name: pypyr.steps.echo
+    in:
+      echoMe: --- Unit Testing Python ---
+  - name: pypyr.steps.cmd
+    in: 
+     cmd: poetry run python api/test/connection_test.py
+ 
 ...
