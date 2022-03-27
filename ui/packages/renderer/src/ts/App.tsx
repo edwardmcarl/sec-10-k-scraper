@@ -22,12 +22,14 @@ class Result {
 class Filing {
   entityName: string; // name of entity
   cikNumber: string; // cik number
+  filingType: string; // type of filing
   filingDate: string; // filing date
   documentAddress10k: string; // document address for 10-K
   extractInfo: boolean; // true/false if user wants to extract info from 10-K
-  constructor(entityNameIn: string, cikNumberIn: string, filingDateIn: string, documentAddress10kIn: string, extractInfoIn: boolean) {
+  constructor(entityNameIn: string, cikNumberIn: string, filingTypeIn: string, filingDateIn: string, documentAddress10kIn: string, extractInfoIn: boolean) {
     this.entityName = entityNameIn;
     this.cikNumber = cikNumberIn;
+    this.filingType = filingTypeIn;
     this.filingDate = filingDateIn;
     this.documentAddress10k = documentAddress10kIn;
     this.extractInfo = extractInfoIn;
@@ -100,6 +102,7 @@ function ResultsRow(props: ResultsRowProps) {
     <tr>
       <td>{props.filing.entityName}</td>
       <td>{props.filing.cikNumber}</td>
+      <td>{props.filing.filingType}</td>
       <td>{props.filing.filingDate}</td>
       <td>{props.filing.documentAddress10k}</td>
       <td align="center">
@@ -116,6 +119,8 @@ function QueueRow(props: QueueRowProps) {
   return (
     <tr>
       <td>{props.filing.entityName}</td>
+      <td>{props.filing.cikNumber}</td>
+      <td>{props.filing.filingType}</td>
       <td>{props.filing.filingDate}</td>
       <td align="center">
         <Button variant="danger" onClick={(event) => {handleRemoveClick();}}>X</Button>
@@ -201,6 +206,9 @@ async function updateSearchInput(input: string) {
 //     }
 // }
 
+//TODO: Add the CIK and Form type to queue table and results table
+//TODO: Link to form instad of 10-k doc
+
 function App() {
   // experimenting https://devrecipes.net/typeahead-with-react-hooks-and-bootstrap/
   const [results, setResults] = useState([]);
@@ -245,10 +253,11 @@ function App() {
     console.log(result.cik);
     console.log(startDateISO);
     console.log(endDateISO);
-    let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [result.cik, ['10-K'], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
+    let type = '10-K';
+    let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [result.cik, [type], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
     if(filingResults !== null) {
     console.log(filingResults);
-      let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, filing.filingDate, filing.document, false));
+      let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, type, filing.filingDate, filing.document, false));
       console.log(filingRows);
       setFilingResultList(filingRows); //takes in something that is a Filing[]
     }    
@@ -292,10 +301,11 @@ function App() {
     console.log(selectedResult.cik); //TODO use 'result' instead; handle timing of React updates
     console.log(startDateISO);
     console.log(endDateISO);
-    let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [selectedResult.cik, ['10-K'], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
+    let type = '10-K';
+    let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [selectedResult.cik, [type], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
     if(filingResults !== null) {
     console.log(filingResults);
-      let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, filing.filingDate, filing.document, false));
+      let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, type, filing.filingDate, filing.document, false));
       console.log(filingRows);
       setFilingResultList(filingRows); //takes in something that is a Filing[]
     }
@@ -420,8 +430,9 @@ function App() {
             <tr>
               <th>Entity Name</th>
               <th>CIK Number</th>
+              <th>Form Type</th>
               <th>Filing Date</th>
-              <th>10-K Document</th>
+              <th>Link to Document</th>
               <th>Extract Info?</th>
             </tr>
           </thead>
@@ -451,7 +462,7 @@ function App() {
   </Container>
 
   {/* Queue drawer/canvas */}
-  <Offcanvas show={show} onHide={handleClose} placement='end'>
+  <Offcanvas show={show} onHide={handleClose} placement='end' width='99%'>
     <Offcanvas.Header closeButton>
       <Offcanvas.Title>Queue</Offcanvas.Title>
     </Offcanvas.Header>
@@ -462,6 +473,8 @@ function App() {
             <thead>
               <tr>
                 <th>Entity Name</th>
+                <th>CIK Number</th>
+                <th>Form Type</th>
                 <th>Filing Date</th>
                 <th></th>
               </tr>
