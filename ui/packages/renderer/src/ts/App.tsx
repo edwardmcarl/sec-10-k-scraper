@@ -235,6 +235,10 @@ function App() {
   //Map that essentially acts as a Set, to track what filings are in the list
   const [queueFilingMap, setQueueFilingMap] = useState(new Map<string,Filing>()); // "queue of filings"
 
+  // Dropdown menu setup
+  let defaultForm = '10-K'; // If toggle not chosen, defaults to 10-K
+  const [formType, setFormType] = useState(defaultForm);
+
   const addQueueFilingToMap = (f: Filing) => {
    let newQueueFilingMap = new Map<string,Filing>(queueFilingMap);
    newQueueFilingMap.set(f.documentAddress10k, f);
@@ -253,14 +257,19 @@ function App() {
     console.log(result.cik);
     console.log(startDateISO);
     console.log(endDateISO);
-    let type = '10-K';
-    let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [result.cik, [type], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
+    let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [result.cik, [formType], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
     if(filingResults !== null) {
     console.log(filingResults);
-      let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, type, filing.filingDate, filing.document, false));
+      let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false));
       console.log(filingRows);
       setFilingResultList(filingRows); //takes in something that is a Filing[]
     }    
+  };
+
+  const handleFormDropdownClick = (e: any) => {
+    // const formInput:string = e.target.value;
+    setFormType(e);
+    console.log(e);
   };
 
   
@@ -301,11 +310,10 @@ function App() {
     console.log(selectedResult.cik); //TODO use 'result' instead; handle timing of React updates
     console.log(startDateISO);
     console.log(endDateISO);
-    let type = '10-K';
-    let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [selectedResult.cik, [type], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
+    let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [selectedResult.cik, [formType], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
     if(filingResults !== null) {
     console.log(filingResults);
-      let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, type, filing.filingDate, filing.document, false));
+      let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false));
       console.log(filingRows);
       setFilingResultList(filingRows); //takes in something that is a Filing[]
     }
@@ -377,12 +385,25 @@ function App() {
   <Container>
     <Row className="mb-3">
       <Col>
-      <text>Start Date: </text>
-      <DatePicker onChange={setStartDate} value={startDate}/>
+        <text>Start Date: </text>
+        <DatePicker onChange={setStartDate} value={startDate}/>
       </Col>
       <Col>
-      <text>End Date: </text>
-      <DatePicker onChange={setEndDate} value={endDate} />
+        <text>End Date: </text>
+        <DatePicker onChange={setEndDate} value={endDate} />
+      </Col>
+      <Col className='input-group'>
+        <text>Form Type:&nbsp;&nbsp;&nbsp;</text>
+        <Dropdown onSelect={handleFormDropdownClick}>
+          <Dropdown.Toggle variant="secondary" id="form-dropdown">
+            {formType}
+          </Dropdown.Toggle>
+          <Dropdown.Menu>
+            <Dropdown.Item eventKey='10-K'>10-K</Dropdown.Item>
+            <Dropdown.Item eventKey='10-Q'>10-Q</Dropdown.Item>
+            <Dropdown.Item eventKey='20-F'>20-F</Dropdown.Item>
+          </Dropdown.Menu>
+        </Dropdown>
       </Col>
     </Row>
   </Container>
