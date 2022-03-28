@@ -297,9 +297,13 @@ class TestAPIConnection(unittest.TestCase):
             "ein",
             "address",
             "filings",
+            "forms",
         ]
         for key in keys:
             self.assertTrue(key in results, f"Missing key: {key}")
+
+        for key in results:
+            self.assertTrue(key in keys, f"Unexpected key: {key}")
 
         self.assertEqual(self.real_cik, results["cik"])
         self.assertListEqual(["10-K"], results["forms"])
@@ -320,17 +324,27 @@ class TestAPIConnection(unittest.TestCase):
             self.assertTrue(key in address_obj["mailing"])
             self.assertTrue(key in address_obj["business"])
 
+        for key in address_obj["mailing"]:
+            self.assertTrue(key in keys, f"Unexpected key: {key}")
+
+        for key in address_obj["business"]:
+            self.assertTrue(key in keys, f"Unexpected key: {key}")
+
         filing_obj = results["filings"][0]
         keys = [
             "reportDate",
             "filingDate",
             "document",
+            "parserDocument",
             "form",
             "isXBRL",
             "isInlineXBRL",
         ]
         for key in keys:
             self.assertTrue(key in filing_obj, f"Missing key: {key}")
+
+        for key in filing_obj:
+            self.assertTrue(key in keys, f"Unexpected key: {key}")
 
 
 if __name__ == "__main__":
