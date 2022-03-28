@@ -59,11 +59,6 @@ class Parser:
         if not (document_url.endswith(".txt")):
             raise ParserError(ParserError.DOCUMENT_NOT_SUPPORTED, document_url)
 
-        # req = requests.get(document_url)
-        # if req.status_code >= 400 and req.status_code < 500:
-        #     raise ParserError(ParserError.CONNECTION_ERROR)
-        # elif req.status_code >= 500:
-        #     raise ParserError(ParserError.SERVER_ERROR)
         hdrs = {
             "Host": "www.sec.gov",
             "User-Agent": "Lafayette College yevenyos@lafayette.edu",
