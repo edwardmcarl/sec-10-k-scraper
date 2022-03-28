@@ -7,6 +7,7 @@ import React from 'react';
 import {useState, useEffect} from 'react';
 import {Button, Col, Container, Dropdown, Row, InputGroup, FormControl, FormLabel, Table, ListGroup, Spinner, Form, Offcanvas} from 'react-bootstrap';
 import DatePicker from 'react-date-picker';
+import { string } from 'prop-types';
 
 // interface FilingSearchResult {
   
@@ -19,6 +20,20 @@ class Result {
   }
 }
 // }
+
+// for user inputs through file uploads
+// assuming only 10-K to start
+class UserInput {
+  // CIK of entity
+  cik: string;
+  // year of filings
+  year: string;
+  constructor(cikIn: string, yearIn: string){
+    this.cik = cikIn;
+    this.year = yearIn;
+  }
+}
+
 class Filing {
   entityName: string; // name of entity
   cikNumber: string; // cik number
@@ -313,6 +328,80 @@ function App() {
     //selectEntity(result, startDate, endDate);
   };
 
+  // https://www.pluralsight.com/guides/how-to-use-a-simple-form-submit-with-files-in-react
+  // https://thewebdev.info/2021/11/26/how-to-read-a-text-file-in-react/
+  // https://www.youtube.com/watch?v=-AR-6X_98rM&ab_channel=KyleRobinsonYoung
+  // TODO change from e: any to e: some other thing
+  // TODO error checking
+  const handleFileUpload = async (e: any) => {
+    e.preventDefault();
+    const reader: FileReader = new FileReader();
+    reader.onload = async (e: ProgressEvent<FileReader>) => {
+      if(e !== null && e.target !== null && e.target.result !== null && /* e.target.result instanceof string && */ !(e.target.result instanceof ArrayBuffer)){
+        // e.target is a FileReader
+        let res: string = e.target.result;
+        // put all of the words into arrays, with white space trimmed
+        const lines: string[][] = res.split('\n').map(function (line) {
+          return line.split(' ').map(function (word) {
+            return word.trim();
+          });
+        });
+        console.log(lines);
+        // is this where I would close the file? certainly doesn't have to be open now. unsure.
+        for(let i = 0; i < lines.length; i++){
+          if(lines[i][0] !== null && lines[i][1] !== null && lines[i][2] !== null) {
+            // probably need to check stuff here
+            let type = '10-K';
+            console.log(lines[i][0]);
+            console.log(lines[i][1]);
+            console.log(lines[i][2]);
+            let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [lines[i][0], [type], lines[i][1], lines[i][2]]);
+            if(filingResults !== null) {
+            console.log(filingResults);
+              let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, type, filing.filingDate, filing.document, false));
+              console.log(filingRows);
+              //setFilingResultList(filingRows); //takes in something that is a Filing[]
+              // this seems... messy
+              for(let ind = 0; ind < filingRows.length; ind++){
+                console.log(filingRows[ind]);
+                addQueueFilingToMap(filingRows[ind]);
+              }
+            }
+          }
+          else {
+            // This is where some error handling would happen
+            console.log('You need to put in a CIK and a start date and an end date for line ' + (i + 1));
+          }
+        }
+      }
+      /* else if(e !== null && e.target !== null && e.target.result !== null){
+        const text = e.target.result;
+        console.log(text);
+      } */
+    };
+    /* reader.onload = (e: ProgressEvent<FileReader>) => {
+      if(e !== null){
+        if(e.target !== null){
+          const text = e.target.result;
+          console.log(text);
+          if(reader !== null && reader.result !== null && reader.result instanceof string) {
+            const res = reader.result;
+            if(res instanceof string)
+            {
+              const lines = res.split('\n').map(function (line) {
+                return line.split(' ')
+              })
+            }
+            const lines = reader.result.split('\n').map(function (line) {
+              return line.split(' ')
+            })
+          }
+        }
+      }
+    }; */
+    reader.readAsText(e.target.files[0]);
+  };
+
   return (
   <div> {/* Outer div */}
   
@@ -397,7 +486,7 @@ function App() {
       <Row>
         <Col>
           <form>
-            <input type="file" id="fileUpload" accept=".txt"/>
+            <input type="file" id="fileUpload" accept=".txt" onChange={handleFileUpload}/>
           </form>
         </Col>
       </Row>
