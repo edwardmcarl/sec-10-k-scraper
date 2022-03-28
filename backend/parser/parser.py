@@ -115,7 +115,6 @@ class Parser:
         matches = regex.finditer(document["10-K"])
 
         df = pd.DataFrame([(x.group(), x.start(), x.end()) for x in matches])
-        print(df)
 
         df.columns = ["item", "start", "end"]
         df["item"] = df.item.str.lower()
@@ -132,7 +131,6 @@ class Parser:
             subset=["item"], keep="last"
         )
         pos_df.set_index("item", inplace=True)
-        print(pos_df)
         document_map = {}
         index_length = len(pos_df.index)
         for index, item in enumerate(pos_df.index):
