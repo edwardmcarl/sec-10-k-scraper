@@ -365,9 +365,8 @@ class APIConnection:
                     ):
                         if recent_filings["form"][i] in forms:
                             cik = cik_number.strip("CIK").strip("0")
-                            accession_number = recent_filings["accessionNumber"][
-                                i
-                            ].replace("-", "")
+                            raw_accession_number = recent_filings["accessionNumber"][i]
+                            accession_number = raw_accession_number.replace("-", "")
                             doc = (
                                 f"{recent_filings['accessionNumber'][i]}.txt"
                                 if len(recent_filings["primaryDocument"][i]) == 0
@@ -381,6 +380,7 @@ class APIConnection:
                                     "filingDate": recent_filings["filingDate"][i],
                                     "form": recent_filings["form"][i],
                                     "document": f"https://sec.gov/Archives/edgar/data/{cik}/{accession_number}/{doc}",
+                                    "parserDocument": f"https://sec.gov/Archives/edgar/data/{cik}/{accession_number}/{raw_accession_number}.txt",
                                     "isXBRL": is_xbrl,
                                     "isInlineXBRL": is_inline_xbrl,
                                 }
