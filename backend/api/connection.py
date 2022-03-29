@@ -359,10 +359,10 @@ class APIConnection:
                     recent_filings = data
 
                 for i in range(len(recent_filings["accessionNumber"])):
-                    if (
-                        recent_filings["filingDate"][i] >= start_date
-                        and recent_filings["filingDate"][i] <= end_date
-                    ):
+                    filing_date = date.fromisoformat(recent_filings["filingDate"][i])
+                    start_date_obj = date.fromisoformat(start_date)
+                    end_date_obj = date.fromisoformat(end_date)
+                    if filing_date >= start_date_obj and filing_date <= end_date_obj:
                         if recent_filings["form"][i] in forms:
                             cik = cik_number.strip("CIK").strip("0")
                             accession_number = recent_filings["accessionNumber"][
