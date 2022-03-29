@@ -357,12 +357,9 @@ class APIConnection:
                 else:
                     returned_data = prev_data
                     recent_filings = data
-
                 for i in range(len(recent_filings["accessionNumber"])):
-                    filing_date = date.fromisoformat(recent_filings["filingDate"][i])
-                    start_date_obj = date.fromisoformat(start_date)
-                    end_date_obj = date.fromisoformat(end_date)
-                    if filing_date >= start_date_obj and filing_date <= end_date_obj:
+                    filing_date = recent_filings["filingDate"][i]
+                    if filing_date >= start_date and filing_date <= end_date:
                         if recent_filings["form"][i] in forms:
                             cik = cik_number.strip("CIK").strip("0")
                             accession_number = recent_filings["accessionNumber"][
@@ -385,7 +382,7 @@ class APIConnection:
                                     "isInlineXBRL": is_inline_xbrl,
                                 }
                             )
-                    else:
+                    elif filing_date < start_date:
                         break
                 if prev_data is None and "files" in data["filings"]:
                     for i in range(len(data["filings"]["files"])):
