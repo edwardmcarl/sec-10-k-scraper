@@ -1,5 +1,14 @@
 # sec-10-k-scraper
 
+## Quickstart - Single-Command Build
+To install all dependencies for the entire project, run `npm install` in the *root directory*.
+To build the entire project, run `npm run build:full` either in the root directory or the `/ui/` subdirectory.
+This will:
+  - build the Python backend
+  - move the resulting executable into `/ui/extraResources/` (see the section "Frontend")
+  - build the Electron frontend
+  The resulting product can be found in `/frontend/dist/`.
+
 ## Project Structure
 This repository is divided into two main directories: `backend` and `ui`.
 ### Backend
@@ -80,7 +89,6 @@ Before committing, `nano-staged` runs `eslint` on every applicable file in `pack
 #### Building
 First, build the Python executable and place it in `buildResources`.
 Then run `npm run compile`. The output will be in `ui/dist/{platform}-unpacked` (see above).
-
 #### Remote Function Calls
 The UI communicates with the Python backend using `zerorpc`. More details to come in the future, but the gist is:
 
