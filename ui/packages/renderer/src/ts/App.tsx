@@ -5,21 +5,21 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.min.js';
 import React from 'react';
 import {useState, useEffect} from 'react';
-import {Button, Col, Container, Dropdown, Row, InputGroup, FormControl, FormLabel, Table, ListGroup, Spinner, Form, Offcanvas} from 'react-bootstrap';
+import {Button, Col, Container, Dropdown, Row, InputGroup, FormControl, FormLabel, Table, ListGroup, Spinner, Form, Offcanvas, Alert} from 'react-bootstrap';
 import DatePicker from 'react-date-picker';
 
 // interface FilingSearchResult {
   
-class Result {
-  cik: string;
-  name: string;
+class Result { // result
+  cik: string; // cik number
+  name: string; // name of result
   constructor(cikIn: string, nameIn: string){
     this.cik = cikIn;
     this.name = nameIn;
   }
 }
-// }
-class Filing {
+
+class Filing { // filing info
   entityName: string; // name of entity
   cikNumber: string; // cik number
   filingType: string; // type of filing
@@ -36,69 +36,76 @@ class Filing {
   }
 }
 
-interface ResultsRowProps {
-  filing: Filing;
-  isQueued: boolean;
-  addFilingToQueue:(filing: Filing)=> void;
-  removeFilingFromQueue:(filing: Filing)=> void;
+class AlertData { // Help with the alert handling
+  errorText: string; // text in alert popup
+  showAlert: boolean; // should the alert show or not
+  constructor(errorTextIn: string, showAlertIn: boolean) {
+    this.errorText = errorTextIn;
+    this.showAlert = showAlertIn;
+  }
+}
+
+interface ResultsRowProps { // props for the results row
+  filing: Filing; // filing linked to the row
+  isQueued: boolean; // is the filing in the queue
+  addFilingToQueue:(filing: Filing)=> void; // add the linked filing to queue
+  removeFilingFromQueue:(filing: Filing)=> void; // remove the linked filing from queue
 } 
 
-interface QueueRowProps {
-  filing: Filing
-  addToQueue:(filing: Filing)=> void;
-  removeFromQueue:(filing: Filing)=> void;
+interface QueueRowProps { // props for the queue row
+  filing: Filing // filing linked in queue row
+  addToQueue:(filing: Filing)=> void; // add the linked filing to queue
+  removeFromQueue:(filing: Filing)=> void; // remove the linked filing from queue
 }
 
-interface AddressData {
-  street1: string;
-  street2: string;
-  city: string;
-  stateOrCountry: string;
-  zipCode: string;
-  stateOrCountryDescription: string;
+interface AddressData { // data for the address
+  street1: string; // street 1
+  street2: string; // street 2
+  city: string; // city
+  stateOrCountry: string; // state or country
+  zipCode: string; // zip code
+  stateOrCountryDescription: string; // state or country description
 }
 
-interface FilingData {
-  reportDate: string;
-  filingDate: string;
-  document: string;
-  form: string;
-  isXBRL: number;
-  isInlineXBRL: number;
+interface FilingData { // data for the filing
+  reportDate: string; // report date
+  filingDate: string; // filing date
+  document: string; // document
+  form: string; // form
+  isXBRL: number; // if it's xbrl
+  isInlineXBRL: number; // if it's inline xbrl
 }
 
-interface BulkAddressData {
-  mailing: AddressData;
-  business: AddressData;
+interface BulkAddressData { // data for a bulk address
+  mailing: AddressData; // mailing address
+  business: AddressData; // business address
 }
 
-interface FormData {
-  cik: string;
-  issuing_entity: string;
-  state_of_incorporation: string;
-  ein: string;
-  forms: Array<string>;
-  address: BulkAddressData;
-  filings: Array<FilingData>;
+interface FormData { // data for the form
+  cik: string; // cik number
+  issuing_entity: string; // issuing entity name
+  state_of_incorporation: string; // state of incorporation
+  ein: string; // ein
+  forms: Array<string>; // forms
+  address: BulkAddressData; // address
+  filings: Array<FilingData>; // filings
 }
 
-function ResultsRow(props: ResultsRowProps) {
-  const handleInfoClick = () => {
-    if (props.isQueued) {
-      props.removeFilingFromQueue(props.filing);
-      console.log('REMOVED ' + props.filing.filingDate + ' FROM QUEUE');
+function ResultsRow(props: ResultsRowProps) { // row for results
+  const handleInfoClick = () => { // handle info click
+    if (props.isQueued) { // if filing is in queue
+      props.removeFilingFromQueue(props.filing); // remove from queue
     } else {
-      props.addFilingToQueue(props.filing);
-      console.log('ADDED ' + props.filing.filingDate + ' TO QUEUE');
+      props.addFilingToQueue(props.filing); // add to queue
     }
   };
-  const getButtonText = () => {
-    return props.isQueued ? 'Remove from Queue': 'Add to Queue'; 
+  const getButtonText = () => { // get button text
+    return props.isQueued ? 'Remove from Queue': 'Add to Queue'; // if filing is in queue, remove from queue, else add to queue
   };
-  const getButtonColorScheme = () => {
-    return props.isQueued ? 'danger': 'primary';
+  const getButtonColorScheme = () => { // get button color scheme
+    return props.isQueued ? 'danger': 'primary'; // if filing is in queue, remove from queue, else add to queue
   };
-  return (
+  return ( // return the row
     <tr>
       <td>{props.filing.entityName}</td>
       <td>{props.filing.cikNumber}</td>
@@ -112,11 +119,11 @@ function ResultsRow(props: ResultsRowProps) {
   );
 }
 
-function QueueRow(props: QueueRowProps) {
-  const handleRemoveClick = () => {
-    props.removeFromQueue(props.filing);
+function QueueRow(props: QueueRowProps) { // row for queue
+  const handleRemoveClick = () => { // handle remove click
+    props.removeFromQueue(props.filing); // remove from queue
   };
-  return (
+  return (  // return the row
     <tr>
       <td>{props.filing.entityName}</td>
       <td>{props.filing.cikNumber}</td>
@@ -129,16 +136,23 @@ function QueueRow(props: QueueRowProps) {
   );
 }
 
-// experimenting https://devrecipes.net/typeahead-with-react-hooks-and-bootstrap/
-let dropdownData: (Result | undefined)[];/* [
-  { cik: '1', name: 'devrecipes.net' },
-  { cik: '2', name: 'devrecipes' },
-  { cik: '3', name: 'devrecipe' },
-  { cik: '4', name: 'dev recipes' },
-  { cik: '5', name: 'development' },
-]; */
+// TODO: Figure out why it takes 2 clicks to bring this up. also getting date errors
+function EmptySearchAlert(props: AlertData) { // alert for empty search
+  if (props.showAlert) { // if alert should show
+    return ( // return the alert
+      <Alert variant="danger">
+        <p>
+          {props.errorText}
+        </p>
+      </Alert>
+    );
+  }
+  return (<text></text>); // return nothing
+}
 
-const mockResults = (keyword: string) => {
+// experimenting https://devrecipes.net/typeahead-with-react-hooks-and-bootstrap/
+let dropdownData: (Result | undefined)[]; // data for the dropdown
+const mockResults = (keyword: string) => { // mock results
   return new Promise((res, rej) => {
     setTimeout(() => {
       const searchResults = dropdownData;
@@ -148,9 +162,9 @@ const mockResults = (keyword: string) => {
 };
 
 // type for the result of the search() Python call
-interface searchResult {
-  cik: string,
-  entity: string
+interface searchResult { // type for the result of the search() Python call
+  cik: string, // cik number
+  entity: string // entity name
 }
 
 // class for search results entity-cik pairs
@@ -183,38 +197,13 @@ async function updateSearchInput(input: string) {
   console.log('searched');
 }
 
-// // called by onNameSelected, has to be async
-// async function selectEntity(res: Result, startDate: Date, endDate: Date){
-//   // get the date strings
-//   let startDateISO = startDate.toISOString().split('T')[0];
-//   let endDateISO = endDate.toISOString().split('T')[0];
-//   // for development purposes
-//   console.log('start date: ' + startDateISO);
-//   console.log('end date: ' + endDateISO);
-//   // call API to get filing information for selected entity and dates
-//   let filingResults = await window.requestRPC.procedure('search_form_info', [res.cik, startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number
-//   // for development purposes
-//   console.log('selected entity');
-//   console.log(filingResults);
-//   // TO DO would call function to update results table below
-//   let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [searchBarContents, ['10-K'], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
-//     if(filingResults !== null) {
-//     console.log(filingResults);
-//       let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, filing.filingDate, filing.document, false));
-//       console.log(filingRows);
-//       setFilingResultList(filingRows); //takes in something that is a Filing[]
-//     }
-// }
-
-//TODO: Add the CIK and Form type to queue table and results table
-//TODO: Link to form instad of 10-k doc
-
 function App() {
-  // experimenting https://devrecipes.net/typeahead-with-react-hooks-and-bootstrap/
+  
   const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [name, setName] = useState('');
   const [isNameSelected, setIsNameSelected] = useState(false);
+
   // adding something to store entire result
   const [result, setResult] = useState(new Result('', ''));
   
@@ -239,58 +228,69 @@ function App() {
   let defaultForm = '10-K'; // If toggle not chosen, defaults to 10-K
   const [formType, setFormType] = useState(defaultForm);
 
-  const addQueueFilingToMap = (f: Filing) => {
-   let newQueueFilingMap = new Map<string,Filing>(queueFilingMap);
-   newQueueFilingMap.set(f.documentAddress10k, f);
-   setQueueFilingMap(newQueueFilingMap);
+  const [alertMessage, setAlertMessage] = useState(new AlertData('', false));
+
+  const [performNER, setPerfromNER] = useState(false); // check box for NER changes this value
+
+  const addQueueFilingToMap = (f: Filing) => { // add filing to queue
+   let newQueueFilingMap = new Map<string,Filing>(queueFilingMap); // create a new map copying the old queue
+   newQueueFilingMap.set(f.documentAddress10k, f); // add filing to map queue
+   setQueueFilingMap(newQueueFilingMap);  // update the map queue
   };
 
-  const removeQueueFilingFromMap = (f: Filing) => {
-    let newQueueFilingMap = new Map<string,Filing>(queueFilingMap);
-    newQueueFilingMap.delete(f.documentAddress10k);
-    setQueueFilingMap(newQueueFilingMap);
+  const removeQueueFilingFromMap = (f: Filing) => { // remove filing from queue
+    let newQueueFilingMap = new Map<string,Filing>(queueFilingMap); // create a new map copying the old queue
+    newQueueFilingMap.delete(f.documentAddress10k); // remove filing from map queue
+    setQueueFilingMap(newQueueFilingMap); // update the map queue
   };
 
-  const handleSearchClick = async () => {
-    let startDateISO = startDate.toISOString().split('T')[0];
-    let endDateISO = endDate.toISOString().split('T')[0];
-    console.log(result.cik);
-    console.log(startDateISO);
-    console.log(endDateISO);
+  const handleSearchClick = async () => { // Triggers when search button is clicked
+    setAlertMessage(new AlertData('', false)); // reset alert
+    let startDateISO = startDate.toISOString().split('T')[0]; // get start date in ISO format
+    let endDateISO = endDate.toISOString().split('T')[0]; // get end date in ISO format
     let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [result.cik, [formType], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
-    if(filingResults !== null) {
-    console.log(filingResults);
-      let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false));
-      console.log(filingRows);
+    if(filingResults !== null) { // if filingResults is not null
+      let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false)); // create filing rows
       setFilingResultList(filingRows); //takes in something that is a Filing[]
-    }    
+    }
+
+    if(filingResultList.length === 0) { // Checking to see if no results were found
+      let errorMessage: AlertData = new AlertData('No filings found.', true); // create error message for empty search
+      setAlertMessage(errorMessage); // set alert message
+    }
   };
 
-  const handleFormDropdownClick = (e: any) => {
-    // const formInput:string = e.target.value;
-    setFormType(e);
-    console.log(e);
+  const handleFormDropdownClick = (e: any) => { // Triggers when form dropdown is clicked
+    setFormType(e); // set form type to the selected form
   };
 
+  const handleNERCheck = () => { // Triggers when NER checkbox is clicked
+    setPerfromNER(!performNER); // set performNER to the opposite of what it was
+  };
+
+  const handleExtractInfoClick = () => {
+    // include perfromNER in the call
+    console.log('NER: '+ performNER);
+
+  };
   
   // experimenting https://devrecipes.net/typeahead-with-react-hooks-and-bootstrap/
-  const handleInputChange = (e: any) => {
-    const nameValue = e.target.value;
-    setName(nameValue);
-    // adapting for senior project code
-    setSearchBarContents(nameValue);
-    updateSearchInput(nameValue);
+  const handleInputChange = (e: any) => { // Triggers when search bar is changed
+    const nameValue = e.target.value; // get the new input
+    setName(nameValue); // set the new input
+    setSearchBarContents(nameValue); // set the new input
+    updateSearchInput(nameValue); // update the search input
     // even if we've selected already an item from the list, we should reset it since it's been changed
     setIsNameSelected(false);
     // clean previous results, as would be the case if we get the results from a server
     // TO DO figure out how this works. and make it better. catch errors, basically.
-    setResults([]);
-    if (nameValue.length > 1) {
-      setIsLoading(true);
-      mockResults(nameValue)
-        .then((res) => {
-          setResults(res as React.SetStateAction<never[]>);
-          setIsLoading(false);
+    setResults([]); // clean previous results
+    if (nameValue.length > 1) { // if the input is more than 1 character
+      setIsLoading(true); // set loading to true
+      mockResults(nameValue)  // get the results
+        .then((res) => { 
+          setResults(res as React.SetStateAction<never[]>); // set the results
+          setIsLoading(false); // set loading to false
         })
         .catch(() => {
           setIsLoading(false);
@@ -298,27 +298,21 @@ function App() {
     }
   };
 
-  const onNameSelected = async (selectedResult: Result) => {
+  const onNameSelected = async (selectedResult: Result) => { // Triggers when an item is selected from the dropdown
     // user clicks the little box with the appropriate entity
     // save information about selected entity
-    setName(selectedResult.name);
-    setResult(selectedResult);
-    setIsNameSelected(true);
-    setResults([]);
-    let startDateISO = startDate.toISOString().split('T')[0];
-    let endDateISO = endDate.toISOString().split('T')[0];
-    console.log(selectedResult.cik); //TODO use 'result' instead; handle timing of React updates
-    console.log(startDateISO);
-    console.log(endDateISO);
+    setName(selectedResult.name); // set the new input
+    setResult(selectedResult); // set the new input
+    setIsNameSelected(true); // set the new input
+    setResults([]); // clean previous results
+    let startDateISO = startDate.toISOString().split('T')[0];   // get start date in ISO format
+    let endDateISO = endDate.toISOString().split('T')[0]; // get end date in ISO format
+  
     let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [selectedResult.cik, [formType], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
-    if(filingResults !== null) {
-    console.log(filingResults);
-      let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false));
-      console.log(filingRows);
+    if(filingResults !== null) { // if filingResults is not null
+      let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false)); // create filing rows
       setFilingResultList(filingRows); //takes in something that is a Filing[]
     }
-    // call selectEntity
-    //selectEntity(result, startDate, endDate);
   };
 
   return (
@@ -334,21 +328,7 @@ function App() {
       </Row>
     </Container>
 
-  {/* Search Bar*/}
-    {/* <Container>
-      <InputGroup>
-        <FormControl 
-        placeholder="Entity/CIK"
-        id="searchInput"
-        onChange={(changeEvent)=>{
-          let changedPropertyValue = changeEvent.target.value;
-          setSearchBarContents(changedPropertyValue);
-          }}
-        />
-      </InputGroup>
-    </Container> */}
-
-    {/* Search Bar Two (Experimenting) */}
+    {/* Search Bar Two */}
     <Container>
       <Form.Group className="typeahead-form-group mb-3">
         <Form.Control
@@ -381,154 +361,153 @@ function App() {
       </Form.Group>
     </Container>
 
-  {/* Start and End Dates*/}
-  <Container>
-    <Row className="mb-3">
-      <Col>
-        <text>Start Date: </text>
-        <DatePicker onChange={setStartDate} value={startDate}/>
-      </Col>
-      <Col>
-        <text>End Date: </text>
-        <DatePicker onChange={setEndDate} value={endDate} />
-      </Col>
-      <Col className='input-group'>
-        <text>Form Type:&nbsp;&nbsp;&nbsp;</text>
-        <Dropdown onSelect={handleFormDropdownClick}>
-          <Dropdown.Toggle variant="secondary" id="form-dropdown">
-            {formType}
-          </Dropdown.Toggle>
-          <Dropdown.Menu>
-            <Dropdown.Item eventKey='10-K'>10-K</Dropdown.Item>
-            <Dropdown.Item eventKey='10-Q'>10-Q</Dropdown.Item>
-            <Dropdown.Item eventKey='20-F'>20-F</Dropdown.Item>
-          </Dropdown.Menu>
-        </Dropdown>
-      </Col>
-    </Row>
-  </Container>
-
-  {/* Choose File */}
-  <Container>
-    <Row>
+    {/* Start and End Dates*/}
+    <Container>
+      <Row className="mb-3">
         <Col>
-          <label htmlFor="fileUpload">Read from file (.txt):</label>
+          <text>Start Date: </text>
+          <DatePicker onChange={setStartDate} value={startDate}/>
+        </Col>
+        <Col>
+          <text>End Date: </text>
+          <DatePicker onChange={setEndDate} value={endDate} />
+        </Col>
+        <Col className='input-group'>
+          <text>Form Type:&nbsp;&nbsp;&nbsp;</text>
+          <Dropdown onSelect={handleFormDropdownClick}>
+            <Dropdown.Toggle variant="secondary" id="form-dropdown">
+              {formType}
+            </Dropdown.Toggle>
+            <Dropdown.Menu>
+              <Dropdown.Item eventKey='10-K'>10-K</Dropdown.Item>
+              <Dropdown.Item eventKey='10-Q'>10-Q</Dropdown.Item>
+              <Dropdown.Item eventKey='20-F'>20-F</Dropdown.Item>
+            </Dropdown.Menu>
+          </Dropdown>
         </Col>
       </Row>
+    </Container>
+
+    {/* Choose File */}
+    <Container>
+      <Row className="mb-3">
+          <Col>
+            <label htmlFor="fileUpload">Read from file (.txt):</label>
+          </Col>
+        </Row>
+        <Row className="mb-3">
+          <Col>
+            <form>
+              <input type="file" id="fileUpload" accept=".txt"/>
+            </form>
+          </Col>
+        </Row>
+    </Container>
+  
+    {/* Search Button */}
+    <Container id="SearchButton">
+      <Row className="mb-3">
+        <Col>
+          <Button variant="primary" id="search-button" onClick={handleSearchClick}>Search</Button>
+        </Col>
+      </Row>
+    </Container>
+
+    {/* Error Message */}
+    <Container id="errorDiv">
+      <Row className="mb-3">
+        <Col>
+          <EmptySearchAlert errorText={alertMessage.errorText} showAlert={alertMessage.showAlert} ></EmptySearchAlert>
+        </Col>
+      </Row>
+    </Container>
+
+    {/* Table */}
+    <Container>
       <Row>
         <Col>
-          <form>
-            <input type="file" id="fileUpload" accept=".txt"/>
-          </form>
-        </Col>
-      </Row>
-  </Container>
-
-  {/* Error Message */}
-  <Container id="errorDiv">
-    <Row className="mb-3">
-      <Col>
-
-      </Col>
-    </Row>
-  </Container>
-  
-  {/* Search Button */}
-  <Container id="SearchButton">
-    <Row className="mb-3">
-      <Col>
-        <Button variant="primary" id="search-button" onClick={handleSearchClick}>Search</Button>
-      </Col>
-    </Row>
-  </Container>
-
-  {/* Table */}
-  <Container>
-    <Row>
-      <Col>
-        <Table striped bordered hover id="results-table" table-layout="fixed">
-          <thead>
-            <tr>
-              <th>Entity Name</th>
-              <th>CIK Number</th>
-              <th>Form Type</th>
-              <th>Filing Date</th>
-              <th>Link to Document</th>
-              <th>Extract Info?</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filingResultList.map((filing) => (
-              <ResultsRow 
-              key = {filing.documentAddress10k} 
-              filing={filing} 
-              isQueued={queueFilingMap.has(filing.documentAddress10k)} 
-              addFilingToQueue={addQueueFilingToMap} 
-              removeFilingFromQueue={removeQueueFilingFromMap}
-              ></ResultsRow>
-            ))}
-          </tbody>
-        </Table>
-      </Col>
-    </Row>
-  </Container>
-
-  {/* Show Queue Button */}
-  <Container>
-    <Row className="mb-3">
-      <Col>
-        <Button variant="primary" onClick={handleShow}>Show Queue</Button>
-      </Col>
-    </Row>
-  </Container>
-
-  {/* Queue drawer/canvas */}
-  <Offcanvas show={show} onHide={handleClose} placement='end' width='99%'>
-    <Offcanvas.Header closeButton>
-      <Offcanvas.Title>Queue</Offcanvas.Title>
-    </Offcanvas.Header>
-    <Offcanvas.Body>
-      <Row className="mb-3">
-        <Col> 
-          <Table striped bordered hover id="queue-table" table-layout="fixed">
+          <Table striped bordered hover id="results-table" table-layout="fixed">
             <thead>
               <tr>
                 <th>Entity Name</th>
                 <th>CIK Number</th>
                 <th>Form Type</th>
                 <th>Filing Date</th>
-                <th></th>
+                <th>Link to Document</th>
+                <th>Extract Info?</th>
               </tr>
             </thead>
             <tbody>
-              {/* TO BE CHANGED */}
-              {Array.from(queueFilingMap.values()).map(((filing) => (
-                <QueueRow 
+              {filingResultList.map((filing) => (
+                <ResultsRow 
                 key = {filing.documentAddress10k} 
                 filing={filing} 
-                addToQueue={addQueueFilingToMap} 
-                removeFromQueue={removeQueueFilingFromMap}
-                ></QueueRow>
-              )))}
+                isQueued={queueFilingMap.has(filing.documentAddress10k)} 
+                addFilingToQueue={addQueueFilingToMap} 
+                removeFilingFromQueue={removeQueueFilingFromMap}
+                ></ResultsRow>
+              ))}
             </tbody>
           </Table>
         </Col>
       </Row>
-      <Row className="mb-3">
-        <Col>
-          <Form.Check id = "NERCheck" type="checkbox" label="Apply Named Entity Recognition to Queue" />
-        </Col>
-      </Row>
-      <Row className="mb-3">
-        <Col>
-          <Button variant="primary" onClick={handleShow}>Extract Information</Button>
-        </Col>
-      </Row>
-    </Offcanvas.Body>
-  </Offcanvas>
-  </div>
-  );
+    </Container>
 
+    {/* Show Queue Button */}
+    <Container>
+      <Row className="mb-3">
+        <Col>
+          <Button variant="primary" onClick={handleShow}>Show Queue</Button>
+        </Col>
+      </Row>
+    </Container>
+
+    {/* Queue drawer/canvas */}
+    <Offcanvas show={show} onHide={handleClose} placement='end' width='99%'>
+      <Offcanvas.Header closeButton>
+        <Offcanvas.Title>Queue</Offcanvas.Title>
+      </Offcanvas.Header>
+      <Offcanvas.Body>
+        <Row className="mb-3">
+          <Col> 
+            <Table striped bordered hover id="queue-table" table-layout="fixed">
+              <thead>
+                <tr>
+                  <th>Entity Name</th>
+                  <th>CIK Number</th>
+                  <th>Form Type</th>
+                  <th>Filing Date</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* TO BE CHANGED */}
+                {Array.from(queueFilingMap.values()).map(((filing) => (
+                  <QueueRow 
+                  key = {filing.documentAddress10k} 
+                  filing={filing} 
+                  addToQueue={addQueueFilingToMap} 
+                  removeFromQueue={removeQueueFilingFromMap}
+                  ></QueueRow>
+                )))}
+              </tbody>
+            </Table>
+          </Col>
+        </Row>
+        <Row className="mb-3">
+          <Col>
+            <Form.Check id = "NERCheck" type="checkbox" onChange={handleNERCheck} label="Apply Named Entity Recognition to Queue" />
+          </Col>
+        </Row>
+        <Row className="mb-3">
+          <Col>
+            <Button variant="primary" onClick={handleExtractInfoClick}>Extract Information</Button>
+          </Col>
+        </Row>
+      </Offcanvas.Body>
+    </Offcanvas>
+    </div>
+  );
 }
 
 export default App;
