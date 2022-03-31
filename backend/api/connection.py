@@ -92,6 +92,7 @@ class APIConnectionError(Exception):
     DATE_INPUT_ERROR = "Start date cannot be later than end date"
     UNEXPECTED_ERROR = "Something occured when decompressing and/or decoding response from SEC EDGAR server"
     NO_CIK_EXISTS_ERROR = "The CIK number input does not exist in SEC EDGAR database"
+    FORM_KIND_ERROR = "The form type inputted is not supported by this application"
 
     def __init__(self, message, *values, originalError=None):
         self.message = message
@@ -126,6 +127,8 @@ class APIConnection:
 
     # Update APIConnectionError.START_DATE_INPUT_ERROR when MINIMUM_SEARCH_START_DATE value changes
     MINIMUM_SEARCH_START_DATE = "1994-01-01"
+
+    ALLOWED_FORMS = ["10-K", "10-Q", "20-F"]
 
     def _format_cik(self, cik: int) -> str:
         """
@@ -211,7 +214,8 @@ class APIConnection:
                 Search key that is passed to the SEC EDGAR server
 
             forms
-                List of forms to be retrieved from SEC EDGAR server
+                List of forms to be retrieved from SEC EDGAR server. The forms accepted are
+                10-K, 10-Q and 20-F form options
 
             start_date
                 String input in Date ISO Format. Must not be less than 1994-01-01
@@ -267,6 +271,11 @@ class APIConnection:
             return {}
         cik_number_updated = cik_number.upper()
         forms_updated = [item.upper() for item in forms]
+
+        for item in forms_updated:
+            if item not in APIConnection.ALLOWED_FORMS:
+                raise (APIConnectionError(APIConnectionError.FORM_KIND_ERROR, item))
+
         if not re.match(r"^CIK\d{10}$", cik_number_updated):
             raise APIConnectionError(APIConnectionError.CIK_INPUT_ERROR, cik_number)
         try:
@@ -314,7 +323,6 @@ class APIConnection:
     ) -> Dict[str, Any]:
         # Making request to server
         data_api = f"https://data.sec.gov/submissions/{request_document}"
-        print(data_api)
         hdrs = {
             "Host": "data.sec.gov",
             "User-Agent": "Lafayette College yevenyos@lafayette.edu",
@@ -349,17 +357,13 @@ class APIConnection:
                 else:
                     returned_data = prev_data
                     recent_filings = data
-
                 for i in range(len(recent_filings["accessionNumber"])):
-                    if (
-                        recent_filings["filingDate"][i] >= start_date
-                        and recent_filings["filingDate"][i] <= end_date
-                    ):
+                    filing_date = recent_filings["filingDate"][i]
+                    if filing_date >= start_date and filing_date <= end_date:
                         if recent_filings["form"][i] in forms:
                             cik = cik_number.strip("CIK").strip("0")
-                            accession_number = recent_filings["accessionNumber"][
-                                i
-                            ].replace("-", "")
+                            raw_accession_number = recent_filings["accessionNumber"][i]
+                            accession_number = raw_accession_number.replace("-", "")
                             doc = (
                                 f"{recent_filings['accessionNumber'][i]}.txt"
                                 if len(recent_filings["primaryDocument"][i]) == 0
@@ -373,11 +377,12 @@ class APIConnection:
                                     "filingDate": recent_filings["filingDate"][i],
                                     "form": recent_filings["form"][i],
                                     "document": f"https://sec.gov/Archives/edgar/data/{cik}/{accession_number}/{doc}",
+                                    "parserDocument": f"https://sec.gov/Archives/edgar/data/{cik}/{accession_number}/{raw_accession_number}.txt",
                                     "isXBRL": is_xbrl,
                                     "isInlineXBRL": is_inline_xbrl,
                                 }
                             )
-                    else:
+                    elif filing_date < start_date:
                         break
                 if prev_data is None and "files" in data["filings"]:
                     for i in range(len(data["filings"]["files"])):

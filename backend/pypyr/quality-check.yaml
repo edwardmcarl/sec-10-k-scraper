@@ -1,0 +1,63 @@
+--- 
+# this is a pypyr pipeline, see https://pypyr.io/docs/getting-started/basic-concepts/
+#  ---  Template for printing something ---
+# - name: pypyr.steps.echo
+#   comment: 
+#   in:
+#     echoMe:
+#
+# --- Template for running a command ---
+# - name: pypyr.steps.cmd
+#   in:   
+#    cmd: 
+steps:
+  - name: pypyr.steps.echo
+    comment: announce start of python quality checking
+    in:
+      echoMe: --- Starting Python Quality Check ---
+  
+  - name: pypyr.steps.echo
+    in:
+      echoMe: --- Sorting imports ---
+ 
+  - name: pypyr.steps.cmd
+    in: 
+     cmd: poetry run isort .
+ 
+  - name: pypyr.steps.echo
+    in:
+      echoMe: --- Auto-formatting ---
+ 
+  - name: pypyr.steps.cmd
+    in:
+     cmd: poetry run black .
+ 
+  - name: pypyr.steps.echo
+    in:
+      echoMe: --- Linting ---
+ 
+  - name: pypyr.steps.cmd
+    in:
+     cmd: poetry run flake8 .
+   
+  - name: pypyr.steps.echo
+    comment: Flake8 doesn't print anything if it doesn't find errors, so we need to report a success manually
+    in:
+      echoMe: No issues found!
+ 
+  - name: pypyr.steps.echo
+    in:
+      echoMe: --- Typechecking ---
+
+  - name: pypyr.steps.cmd
+    in:
+     cmd: poetry run mypy .
+ 
+  - name: pypyr.steps.echo
+    in:
+      echoMe: --- Unit Testing Python ---
+  - name: pypyr.steps.cmd
+    in: 
+     cmd: poetry run python api/test/connection_test.py
+ 
+...
