@@ -182,19 +182,23 @@ async function updateSearchInput(input: string) {
   // get the new input
   const searchInput = input;
   // call search function in API library created by Sena
-  // TO DO would also catch errors
-  let entityList = await window.requestRPC.procedure('search', [searchInput]);
-  // convert entityList to usable form
-  let entityClassList = (entityList as searchResult[]).map((member) => { 
-    if ((member as searchResult).cik !== undefined && (member as searchResult).entity !== undefined) { //type guard
-      return new Result(member.cik, member.entity);
-    }
-  });
-  // update the dropdownData
-  dropdownData = entityClassList;
-  // for development purposes
-  console.log(entityClassList);
-  console.log('searched');
+  try {
+    let entityList = await window.requestRPC.procedure('search', [searchInput]);
+    // convert entityList to usable form
+    let entityClassList = (entityList as searchResult[]).map((member) => { 
+      if ((member as searchResult).cik !== undefined && (member as searchResult).entity !== undefined) { //type guard
+        return new Result(member.cik, member.entity);
+      }
+    });
+    // update the dropdownData
+    dropdownData = entityClassList;
+    // for development purposes
+    console.log(entityClassList);
+    console.log('searched');
+  } 
+  catch (error) {
+    console.log(error);
+  }
 }
 
 function App() {
@@ -248,14 +252,21 @@ function App() {
     setAlertMessage(new AlertData('', false)); // reset alert
     let startDateISO = startDate.toISOString().split('T')[0]; // get start date in ISO format
     let endDateISO = endDate.toISOString().split('T')[0]; // get end date in ISO format
-    let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [result.cik, [formType], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
-    if(filingResults !== null) { // if filingResults is not null
-      let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false)); // create filing rows
-      setFilingResultList(filingRows); //takes in something that is a Filing[]
+    try {
+      let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [result.cik, [formType], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
+      if(filingResults !== null) { // if filingResults is not null
+        let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false)); // create filing rows
+        setFilingResultList(filingRows); //takes in something that is a Filing[]
+      }
+      if(filingResultList.length === 0) { // Checking to see if no results were found
+        let errorMessage: AlertData = new AlertData('No filings found', true); // create error message for empty search
+        setAlertMessage(errorMessage); // set alert message
+      }
     }
-
-    if(filingResultList.length === 0) { // Checking to see if no results were found
-      let errorMessage: AlertData = new AlertData('No filings found.', true); // create error message for empty search
+    catch (error: any) {
+      let strError = error.message;
+      strError = strError.split(':').pop();
+      let errorMessage: AlertData = new AlertData(strError, true); // create error message for empty search
       setAlertMessage(errorMessage); // set alert message
     }
   };
@@ -307,11 +318,18 @@ function App() {
     setResults([]); // clean previous results
     let startDateISO = startDate.toISOString().split('T')[0];   // get start date in ISO format
     let endDateISO = endDate.toISOString().split('T')[0]; // get end date in ISO format
-  
-    let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [selectedResult.cik, [formType], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
-    if(filingResults !== null) { // if filingResults is not null
-      let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false)); // create filing rows
-      setFilingResultList(filingRows); //takes in something that is a Filing[]
+    try {
+      let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [selectedResult.cik, [formType], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
+      if(filingResults !== null) { // if filingResults is not null
+        let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false)); // create filing rows
+        setFilingResultList(filingRows); //takes in something that is a Filing[]
+      }
+    }
+    catch (error: any) {
+      let strError = error.message;
+      strError = strError.split(':').pop();
+      let errorMessage: AlertData = new AlertData(strError, true); // create error message for empty search
+      setAlertMessage(errorMessage); // set alert message
     }
   };
 
