@@ -1,12 +1,66 @@
 import gzip
 import json
+import os
 import re
+import sys
+from dataclasses import dataclass
 from datetime import date
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from mashumaro import DataClassDictMixin
 from zerorpc import Server  # type: ignore # noqa: F401
+
+# Weird way to import a parent module in Python
+folder_dir = os.path.dirname(os.path.realpath(__file__))
+parent_dir = os.path.dirname(folder_dir)
+sys.path.append(parent_dir)
+from misc import serializable_dataclass  # noqa: E402
+
+
+@dataclass
+class SearchData(DataClassDictMixin):
+    cik: str
+    entity: str
+
+
+@dataclass
+class AddressData(DataClassDictMixin):
+    street1: str
+    street2: str
+    city: str
+    stateOrCountry: str
+    zipCode: str
+    stateOrCountryDescription: str
+
+
+@dataclass
+class FilingData(DataClassDictMixin):
+    reportDate: str
+    filingDate: str
+    form: str
+    document: str
+    parserDocument: str
+    isXBRL: int
+    isInlineXBRL: int
+
+
+@dataclass
+class BulkAddressData(DataClassDictMixin):
+    mailing: AddressData
+    business: AddressData
+
+
+@dataclass
+class FormData(DataClassDictMixin):
+    cik: str
+    issuing_entity: str
+    state_of_incorporation: str
+    ein: str
+    forms: List[str]
+    address: BulkAddressData
+    filings: List[FilingData]
 
 
 class APIConnectionError(Exception):
@@ -138,7 +192,8 @@ class APIConnection:
         zeroList = ["0" for i in range(10 - len(str(cik)))]
         return f"CIK{''.join(zeroList)}{cik}"
 
-    def search(self, search_key: str) -> List[Dict[str, str]]:
+    @serializable_dataclass.remotely_callable_returns_dataclass
+    def search(self, search_key: str) -> List[SearchData]:
         """
         Calls to the SEC EDGAR interface to search through the database to return entities
          that match the search key
@@ -183,10 +238,7 @@ class APIConnection:
                 hits = data["hits"] if data["hits"] else []
                 hits = hits["hits"] if hits["hits"] else []
                 return [
-                    {
-                        "cik": self._format_cik(hit["_id"]),
-                        "entity": hit["_source"]["entity"],
-                    }
+                    SearchData(self._format_cik(hit["_id"]), hit["_source"]["entity"])
                     for hit in hits
                 ]
 
@@ -198,13 +250,16 @@ class APIConnection:
                 APIConnectionError.CONNECTION_ERROR, originalError=f
             )
 
+    @serializable_dataclass.remotely_callable_returns_dataclass
     def search_form_info(
         self,
         cik_number: str,
         forms: List[str] = ["10-K"],
         start_date: str = MINIMUM_SEARCH_START_DATE,
         end_date: str = date.today().isoformat(),
-    ) -> Dict[str, Any]:
+    ) -> Union[
+        FormData, None
+    ]:  # Dict[object,object] will error on being assigned most other dicts
         """
         Calls to the SEC EDGAR interface to search through the database to return entities
          that match the search key
@@ -268,7 +323,7 @@ class APIConnection:
 
         # Data validation
         if len(forms) == 0:
-            return {}
+            return None
         cik_number_updated = cik_number.upper()
         forms_updated = [item.upper() for item in forms]
 
@@ -308,6 +363,18 @@ class APIConnection:
             f"{cik_number_updated}.json",
         )
 
+    def _convert_to_address_data(self, dictionary: Dict[str, Any]) -> AddressData:
+        return AddressData(
+            dictionary["street1"] if dictionary["street1"] else None,
+            dictionary["street2"] if dictionary["street2"] else None,
+            dictionary["city"] if dictionary["city"] else None,
+            dictionary["stateOrCountry"] if dictionary["stateOrCountry"] else "",
+            dictionary["zipCode"] if dictionary["zipCode"] else None,
+            dictionary["stateOrCountryDescription"]
+            if dictionary["stateOrCountryDescription"]
+            else "",
+        )
+
     """
     A helper function for APIConnection.search_form_info
     """
@@ -320,7 +387,7 @@ class APIConnection:
         end_date: str,
         request_document: str,
         prev_data=None,
-    ) -> Dict[str, Any]:
+    ) -> FormData:
         # Making request to server
         data_api = f"https://data.sec.gov/submissions/{request_document}"
         hdrs = {
@@ -344,15 +411,22 @@ class APIConnection:
                     )
 
                 if prev_data is None:
-                    returned_data = {
-                        "cik": cik_number,
-                        "issuing_entity": data["name"],
-                        "forms": forms,
-                        "state_of_incorporation": data["stateOfIncorporation"],
-                        "ein": data["ein"] if data["ein"] is not None else "",
-                        "address": data["addresses"],
-                        "filings": [],
-                    }
+                    mailing_address = self._convert_to_address_data(
+                        data["addresses"]["mailing"]
+                    )
+                    business_address = self._convert_to_address_data(
+                        data["addresses"]["business"]
+                    )
+                    address = BulkAddressData(mailing_address, business_address)
+                    returned_data = FormData(
+                        cik_number,
+                        data["name"],
+                        data["stateOfIncorporation"],
+                        data["ein"] if data["ein"] is not None else "",
+                        forms,
+                        address,
+                        [],
+                    )
                     recent_filings = data["filings"]["recent"]
                 else:
                     returned_data = prev_data
@@ -374,16 +448,17 @@ class APIConnection:
                             )
                             is_xbrl = recent_filings["isXBRL"][i]
                             is_inline_xbrl = recent_filings["isInlineXBRL"][i]
-                            returned_data["filings"].append(
-                                {
-                                    "reportDate": recent_filings["reportDate"][i],
-                                    "filingDate": recent_filings["filingDate"][i],
-                                    "form": recent_filings["form"][i],
-                                    "document": f"https://sec.gov/Archives/edgar/data/{cik}/{accession_number}/{doc}",
-                                    "parserDocument": f"https://sec.gov/Archives/edgar/data/{cik}/{accession_number}/{raw_accession_number}.txt",
-                                    "isXBRL": is_xbrl,
-                                    "isInlineXBRL": is_inline_xbrl,
-                                }
+
+                            returned_data.filings.append(
+                                FilingData(
+                                    recent_filings["reportDate"][i],
+                                    recent_filings["filingDate"][i],
+                                    recent_filings["form"][i],
+                                    f"https://sec.gov/Archives/edgar/data/{cik}/{accession_number}/{doc}",
+                                    f"https://sec.gov/Archives/edgar/data/{cik}/{accession_number}/{raw_accession_number}.txt",
+                                    is_xbrl,
+                                    is_inline_xbrl,
+                                )
                             )
                     else:
                         break
