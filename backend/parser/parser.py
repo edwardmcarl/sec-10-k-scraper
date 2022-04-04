@@ -145,3 +145,62 @@ class Parser:
                 }
 
         return document_map
+
+
+
+class HTMLParser:
+    HTML5LIB = 0
+    HTML_PARSER = 1
+    LXML = 2
+    FIELD_REGEX = r"((>(I){0,1}(tem|TEM)(\s|&#160;|&nbsp;)|ITEM(\s|&#160;|&nbsp;))(1(A|B|0|1|2|3|4|5|6){0,1}|2|3|4|5|6|7|7A|8|9(A|B){0,1}))\.{0,1}"
+
+    FIELDS = [
+        "item1",
+        "item1a",
+        "item2",
+        "item3",
+        "item6",
+        "item7",
+        "item7a",
+        "item10",
+        "item12",
+        "item13",
+    ]
+
+    def parse_doc(self, document_url:str):
+        hdrs = {
+            "Host": "www.sec.gov",
+            "User-Agent": "Lafayette College yevenyos@lafayette.edu",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Accept": "*/*",
+        }
+        req = Request(document_url, headers=hdrs, method="GET")
+        try:
+            with urlopen(req) as res:
+                data = res.read()
+                encoding = res.info().get_content_charset("utf-8")
+                # Decompressing received data
+                try:
+                    data = gzip.decompress(data)
+                    data = data.decode(encoding)
+                except Exception as e:
+                    raise ParserError(ParserError.UNEXPECTED_ERROR, originalError=e)
+        # HTTPError has to come before URLError. HTTPError is a subset of URLError
+        except HTTPError as e:
+            if e.code == 404:
+                raise ParserError(
+                    ParserError.NO_FILE_EXISTS_ERROR,
+                    document_url,
+                    originalError=e,
+                )
+            else:
+                raise ParserError(ParserError.SERVER_ERROR, originalError=e)
+        except URLError as f:
+            raise ParserError(ParserError.CONNECTION_ERROR, originalError=f)
+
+        raw_10k = data
+        return BeautifulSoup(raw_10k)
+if __name__ == "__main__":
+    par = HTMLParser()
+    hmm = par.parse_doc("https://www.sec.gov/Archives/edgar/data/0000037996/000003799622000013/f-20211231.htm")
+    print(hmm)
