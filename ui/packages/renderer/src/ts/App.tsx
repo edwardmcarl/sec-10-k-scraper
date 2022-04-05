@@ -356,6 +356,7 @@ function App() {
         });
         console.log(lines);
         // is this where I would close the file? certainly doesn't have to be open now. unsure.
+        let newQueueFilingMap = new Map<string,Filing>(queueFilingMap);
         for(let i = 0; i < lines.length; i++){
           if(lines[i][0] !== null && lines[i][1] !== null && lines[i][2] !== null) {
             // probably need to check stuff here
@@ -373,6 +374,8 @@ function App() {
               for(let ind = 0; ind < filingRows.length; ind++){
                 console.log(filingRows[ind]);
                 addQueueFilingToMap(filingRows[ind]);
+                newQueueFilingMap = new Map<string,Filing>(newQueueFilingMap);
+                newQueueFilingMap.set(filingRows[ind].documentAddress10k, filingRows[ind]);
               }
             }
           }
@@ -381,6 +384,7 @@ function App() {
             console.log('You need to put in a CIK and a start date and an end date for line ' + (i + 1));
           }
         }
+        setQueueFilingMap(newQueueFilingMap);
       }
       /* else if(e !== null && e.target !== null && e.target.result !== null){
         const text = e.target.result;
