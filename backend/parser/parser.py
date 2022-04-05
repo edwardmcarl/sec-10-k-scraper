@@ -28,6 +28,8 @@ class Parser:
     HTML_PARSER = 1
     LXML = 2
     FIELD_REGEX = r"((>(I){0,1}(tem|TEM)(\s|&#160;|&nbsp;)|ITEM(\s|&#160;|&nbsp;))(1(A|B|0|1|2|3|4|5|6){0,1}|2|3|4|5|6|7|7A|8|9(A|B){0,1}))\.{0,1}"
+    COMBINED_FIELD_REGEX = r"((>(I){0,1}(tems|TEMS)(\s|&#160;|&nbsp;)|ITEMS(\s|&#160;|&nbsp;))(1(A|B|0|1|2|3|4|5|6){0,1}|2|3|4|5|6|7|7A|8|9(A|B){0,1}))\.{0,1}"
+    COMPLETE_REGEX = rf"({FIELD_REGEX})|({COMBINED_FIELD_REGEX})"
 
     FIELDS = [
         "item1",
@@ -105,22 +107,36 @@ class Parser:
         for doc_type, doc_start, doc_end in zip(doc_types, doc_start_is, doc_end_is):
             if doc_type == "10-K":
                 document[doc_type] = raw_10k[doc_start:doc_end]
-        regex = re.compile(Parser.FIELD_REGEX)
+        regex = re.compile(Parser.COMPLETE_REGEX)
 
         matches = regex.finditer(document["10-K"])
-
-        df = pd.DataFrame([(x.group(), x.start(), x.end()) for x in matches])
+        matched_list = [(x.group(), x.start(), x.end()) for x in matches]
+        if len(matched_list) == 0:
+            return {}
+        df = pd.DataFrame(matched_list)
 
         df.columns = ["item", "start", "end"]
-        df["item"] = df.item.str.lower()
 
         df.replace("&#160;", " ", regex=True, inplace=True)
         df.replace("&nbsp;", " ", regex=True, inplace=True)
         df.replace(" ", "", regex=True, inplace=True)
         df.replace("\\.", "", regex=True, inplace=True)
         df.replace(">", "", regex=True, inplace=True)
-        df.replace("item", "tem", regex=True, inplace=True)
-        df.replace("tem", "item", regex=True, inplace=True)
+        df.replace("ITEM", "TEM", regex=True, inplace=True)
+        df.replace("TEM", "ITEM", regex=True, inplace=True)
+        df.replace("ITEMS", "ITEM", regex=True, inplace=True)
+        df.replace("Items", "Item", regex=True, inplace=True)
+
+        remove_rows = []
+        for _, row in df.iterrows():
+            item_key = str(row['item'])
+            if item_key.isupper():
+                for key, value in df.iterrows():
+                    row_key = str(value['item'])
+                    if row_key.lower() == item_key.lower() and not row_key.isupper():
+                        remove_rows.append(key)
+        df.drop(remove_rows, inplace=True)
+        df["item"] = df.item.str.lower()
 
         pos_df = df.sort_values("start", ascending=True).drop_duplicates(
             subset=["item"], keep="last"
