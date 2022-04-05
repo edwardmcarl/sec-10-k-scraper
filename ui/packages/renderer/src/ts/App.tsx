@@ -1,11 +1,12 @@
 import logo from '../img/logo.svg';
 import FracTrac_logo from '../img/2021-FracTracker-logo.png';
+import info_circle from '../img/info-circle.png';
 import '../css/App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.min.js';
 import React from 'react';
 import {useState, useEffect} from 'react';
-import {Button, Col, Container, Dropdown, Row, InputGroup, FormControl, FormLabel, Table, ListGroup, Spinner, Form, Offcanvas, Alert} from 'react-bootstrap';
+import {Button, Col, Container, Dropdown, Row, InputGroup, FormControl, FormLabel, Table, ListGroup, Spinner, Form, Offcanvas, Alert, Image, Modal} from 'react-bootstrap';
 import DatePicker from 'react-date-picker';
 
 // interface FilingSearchResult {
@@ -236,6 +237,9 @@ function App() {
 
   const [performNER, setPerfromNER] = useState(false); // check box for NER changes this value
 
+  const [smShow, setSmShow] = useState(false);
+
+
   const addQueueFilingToMap = (f: Filing) => { // add filing to queue
    let newQueueFilingMap = new Map<string,Filing>(queueFilingMap); // create a new map copying the old queue
    newQueueFilingMap.set(f.documentAddress10k, f); // add filing to map queue
@@ -411,6 +415,36 @@ function App() {
       <Row className="mb-3">
           <Col>
             <label htmlFor="fileUpload">Read from file (.txt):</label>
+            <Button
+                variant="light"
+                onClick={() => setSmShow(true)}
+                className="d-inline-flex align-items-center"
+              >
+                <Image
+                  roundedCircle
+                  src={info_circle}
+                />
+              </Button>
+            <Modal
+              size="lg"
+              show={smShow}
+              onHide={() => setSmShow(false)}
+              aria-labelledby="example-modal-sizes-title-sm"
+            >     
+            <Modal.Header closeButton>
+              <Modal.Title id="example-modal-sizes-title-sm">
+                File Upload Setup
+              </Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              [CIK] [START_DATE] [END_DATE]
+              <br/>
+              [CIK] [START_DATE] [END_DATE]
+              <br/>
+              <br/>
+              * Dates are in ISO format (YYYY-MM-DD)
+            </Modal.Body>         
+            </Modal>
           </Col>
         </Row>
         <Row className="mb-3">
