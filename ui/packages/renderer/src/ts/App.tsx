@@ -209,15 +209,14 @@ function App() {
 
   // Dropdown menu setup
   let defaultForm = '10-K'; // If toggle not chosen, defaults to 10-K
-  const [formType, setFormType] = useState(defaultForm);
+  const [formType, setFormType] = useState(defaultForm); // form type
 
-  const [alertMessage, setAlertMessage] = useState(new AlertData('', false));
+  const [alertMessage, setAlertMessage] = useState(new AlertData('', false)); // alert message
 
   const [performNER, setPerfromNER] = useState(false); // check box for NER changes this value
 
-  const [smShow, setSmShow] = useState(false);
+  const [popupShow, setPopupShow] = useState(false); // show popup for text file upload
 
-  
 
   const addQueueFilingToMap = (f: Filing) => { // add filing to queue
    let newQueueFilingMap = new Map<string,Filing>(queueFilingMap); // create a new map copying the old queue
@@ -232,14 +231,13 @@ function App() {
   };
 
   const handleSearchClick = async () => { // Triggers when search button is clicked
-    setAlertMessage(new AlertData('', false)); // reset alert
+    resetAlert(); // reset alert
     let startDateISO = startDate.toISOString().split('T')[0]; // get start date in ISO format
     let endDateISO = endDate.toISOString().split('T')[0]; // get end date in ISO format
     try {
       let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [result.cik, [formType], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
       if(filingResults !== null) { // if filingResults is not null
-        let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false)); // create filing rows
-        setFilingResultList(filingRows); //takes in something that is a Filing[]
+        addFilingToRow(filingResults); // add filing to row
       }
       if(filingResultList.length === 0) { // Checking to see if no results were found
         let errorMessage: AlertData = new AlertData('No filings found', true); // create error message for empty search
@@ -249,14 +247,14 @@ function App() {
     catch (error: any) {
       let strError = error.message;
       strError = strError.split(':').pop();
-      let errorMessage: AlertData = new AlertData(strError, true); // create error message for empty search
-      setAlertMessage(errorMessage); // set alert message
+      handleAlerts(strError); // handle error
+      
     }
   };
 
     // called by handleInputChange, has to be async
   const updateSearchInput = async (input: string) => {
-    setAlertMessage(new AlertData('', false)); // reset alert
+    resetAlert(); // reset alert
     // get the new input
     const searchInput = input;
     // call search function in API library created by Sena
@@ -277,8 +275,7 @@ function App() {
     catch (error: any) {
       let strError = error.message;
       strError = strError.split(':').pop();
-      let errorMessage: AlertData = new AlertData(strError, true); // create error message for empty search
-      setAlertMessage(errorMessage); // set alert message
+      handleAlerts(strError); // handle error
     }
   };
 
@@ -323,27 +320,43 @@ function App() {
   const onNameSelected = async (selectedResult: Result) => { // Triggers when an item is selected from the dropdown
     // user clicks the little box with the appropriate entity
     // save information about selected entity
-    setName(selectedResult.name); // set the new input
-    setResult(selectedResult); // set the new input
-    setIsNameSelected(true); // set the new input
-    setResults([]); // clean previous results
+    saveEntityInfo(selectedResult);
     let startDateISO = startDate.toISOString().split('T')[0];   // get start date in ISO format
     let endDateISO = endDate.toISOString().split('T')[0]; // get end date in ISO format
     try {
       let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [selectedResult.cik, [formType], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
       if(filingResults !== null) { // if filingResults is not null
-        let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false)); // create filing rows
-        setFilingResultList(filingRows); //takes in something that is a Filing[]
+        addFilingToRow(filingResults); // add filing to rowS
       }
     }
     catch (error: any) {
       let strError = error.message;
       strError = strError.split(':').pop();
-      let errorMessage: AlertData = new AlertData(strError, true); // create error message for empty search
-      setAlertMessage(errorMessage); // set alert message
+      handleAlerts(strError); // handle error
     }
   };
 
+  function handleAlerts(errorString: string) {
+    let errorMessage: AlertData = new AlertData(errorString, true); // create error message for empty search
+    setAlertMessage(errorMessage); // set alert message
+  }
+
+  function resetAlert() {
+    setAlertMessage(new AlertData('', false)); // reset alert
+  }
+
+  function addFilingToRow(filingResults: FormData) {
+    let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false)); // create filing rows
+    setFilingResultList(filingRows); //takes in something that is a Filing[]
+  }
+
+  function saveEntityInfo(selectedResult: Result) {
+    setName(selectedResult.name); // set the new input
+    setResult(selectedResult); // set the new input
+    setIsNameSelected(true); // set the new input
+    setResults([]); // clean previous results
+  }
+  
   return (
   <div> {/* Outer div */}
   
@@ -357,7 +370,7 @@ function App() {
       </Row>
     </Container>
 
-    {/* Search Bar Two */}
+    {/* Search Bar */}
     <Container>
       <Form.Group className="typeahead-form-group mb-3">
         <Form.Control
@@ -424,7 +437,7 @@ function App() {
             <label htmlFor="fileUpload">Read from file (.txt):</label>
             <Button
                 variant="light"
-                onClick={() => setSmShow(true)}
+                onClick={() => setPopupShow(true)}
                 className="d-inline-flex align-items-center"
               >
                 <Image
@@ -434,8 +447,8 @@ function App() {
               </Button>
             <Modal
               size="lg"
-              show={smShow}
-              onHide={() => setSmShow(false)}
+              show={popupShow}
+              onHide={() => setPopupShow(false)}
               aria-labelledby="example-modal-sizes-title-sm"
             >     
             <Modal.Header closeButton>
