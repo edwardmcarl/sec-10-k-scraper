@@ -178,29 +178,7 @@ class WhateverFiling {
   }
 }
 
-// called by handleInputChange, has to be async
-async function updateSearchInput(input: string) {
-  // get the new input
-  const searchInput = input;
-  // call search function in API library created by Sena
-  try {
-    let entityList = await window.requestRPC.procedure('search', [searchInput]);
-    // convert entityList to usable form
-    let entityClassList = (entityList as searchResult[]).map((member) => { 
-      if ((member as searchResult).cik !== undefined && (member as searchResult).entity !== undefined) { //type guard
-        return new Result(member.cik, member.entity);
-      }
-    });
-    // update the dropdownData
-    dropdownData = entityClassList;
-    // for development purposes
-    console.log(entityClassList);
-    console.log('searched');
-  } 
-  catch (error) {
-    console.log(error);
-  }
-}
+
 
 function App() {
   
@@ -239,6 +217,7 @@ function App() {
 
   const [smShow, setSmShow] = useState(false);
 
+  
 
   const addQueueFilingToMap = (f: Filing) => { // add filing to queue
    let newQueueFilingMap = new Map<string,Filing>(queueFilingMap); // create a new map copying the old queue
@@ -267,6 +246,34 @@ function App() {
         setAlertMessage(errorMessage); // set alert message
       }
     }
+    catch (error: any) {
+      let strError = error.message;
+      strError = strError.split(':').pop();
+      let errorMessage: AlertData = new AlertData(strError, true); // create error message for empty search
+      setAlertMessage(errorMessage); // set alert message
+    }
+  };
+
+    // called by handleInputChange, has to be async
+  const updateSearchInput = async (input: string) => {
+    setAlertMessage(new AlertData('', false)); // reset alert
+    // get the new input
+    const searchInput = input;
+    // call search function in API library created by Sena
+    try {
+      let entityList = await window.requestRPC.procedure('search', [searchInput]); // get list of entities
+      // convert entityList to usable form
+      let entityClassList = (entityList as searchResult[]).map((member) => {  // create entity class list
+        if ((member as searchResult).cik !== undefined && (member as searchResult).entity !== undefined) { //type guard
+          return new Result(member.cik, member.entity); // create entity class
+        }
+      });
+      // update the dropdownData
+      dropdownData = entityClassList; // update the dropdownData
+      // for development purposes
+      console.log(entityClassList);
+      console.log('searched');
+    } 
     catch (error: any) {
       let strError = error.message;
       strError = strError.split(':').pop();
