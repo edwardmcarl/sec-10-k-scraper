@@ -129,10 +129,10 @@ class Parser:
 
         remove_rows = []
         for _, row in df.iterrows():
-            item_key = str(row['item'])
+            item_key = str(row["item"])
             if item_key.isupper():
                 for key, value in df.iterrows():
-                    row_key = str(value['item'])
+                    row_key = str(value["item"])
                     if row_key.lower() == item_key.lower() and not row_key.isupper():
                         remove_rows.append(key)
         df.drop(remove_rows, inplace=True)
