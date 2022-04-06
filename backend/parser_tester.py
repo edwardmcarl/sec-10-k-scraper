@@ -11,7 +11,6 @@ company_list = [
     {"name": "Pfizer", "cik": "CIK0000078003"},
     {"name": "Exxon", "cik": "CIK0000034088"},
     {"name": "Chesapeake", "cik": "CIK0000895126"},
-    {"name": "Anadarko", "cik": "CIK0000773910"},
     {"name": "Devon", "cik": "CIK0001090012"},
     {"name": "ConocoPhilips", "cik": "CIK0001163165"},
     {"name": "Tesla", "cik": "CIK0001318605"},
@@ -33,7 +32,7 @@ else:
 for item in company_list:
     cik = item["cik"]
     name = item["name"]
-    forms = conn.search_form_info(cik, ["10-K"], "2018-01-01", "2022-04-05")
+    forms = conn.search_form_info(cik, ["10-K"], "2010-01-01", "2022-04-05")
     filings = forms["filings"]
 
     for filing in filings:
@@ -45,7 +44,7 @@ for item in company_list:
         fp.write(f">>>PARSER_DOCUMENT: {parser_document_url}\n")
         fp.write("\n")
         try:
-            output = parser.parse_document(filing["parserDocument"])
+            output = parser.parse_document(document_url)
         except ParserError as e:
             if e.message == ParserError.NO_FILE_EXISTS_ERROR:
                 fp.close()

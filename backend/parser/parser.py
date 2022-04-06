@@ -27,9 +27,14 @@ class Parser:
     HTML5LIB = 0
     HTML_PARSER = 1
     LXML = 2
-    FIELD_REGEX = r"((>(I){0,1}(tem|TEM)(\s|&#160;|&nbsp;)|ITEM(\s|&#160;|&nbsp;))(1(A|B|0|1|2|3|4|5|6){0,1}|2|3|4|5|6|7|7A|8|9(A|B){0,1}))\.{0,1}"
-    COMBINED_FIELD_REGEX = r"((>(I){0,1}(tems|TEMS)(\s|&#160;|&nbsp;)|ITEMS(\s|&#160;|&nbsp;))(1(A|B|0|1|2|3|4|5|6){0,1}|2|3|4|5|6|7|7A|8|9(A|B){0,1}))\.{0,1}"
-    COMPLETE_REGEX = rf"({FIELD_REGEX})|({COMBINED_FIELD_REGEX})"
+    # FIELD_REGEX = r"((>(I){0,1}(tem|TEM)(\s|&#160;|&nbsp;)|ITEM(\s|&#160;|&nbsp;))(1(A|B|0|1|2|3|4|5|6){0,1}|2|3|4|5|6|7|7A|8|9(A|B){0,1}))\.{0,1}"
+    _SECTION_NUMBER_REGEX = r"(1(A|B|0|1|2|3|4|5|6)?)|2|3|4|5|6|(7(A)?)|8|(9(A|B)?)"
+    _SINGLE_FIELD_REGEX = r"(>(It)?(em|TEM)(\s|&#160;|&nbsp;))|(ITEM(\s|&#160;|&nbsp;))" 
+    _COMBINED_FIELD_REGEX = r"(>(It)?(ems|TEMS)(\s|&#160;|&nbsp;))|(ITEMS(\s|&#160;|&nbsp;))"
+    _END_REGEX = r"\.?"
+    COMPLETE_SINGLE_FIELD_REGEX = rf"({_SINGLE_FIELD_REGEX})({_SECTION_NUMBER_REGEX}){_END_REGEX}"
+    COMPLETE_COMBINED_FIELD_REGEX = rf"({_COMBINED_FIELD_REGEX})({_SECTION_NUMBER_REGEX}){_END_REGEX}"
+    COMPLETE_REGEX = rf"({COMPLETE_SINGLE_FIELD_REGEX })|({COMPLETE_COMBINED_FIELD_REGEX})"
 
     FIELDS = [
         "item1",
@@ -58,7 +63,7 @@ class Parser:
         else:
             raise ParserError(ParserError.PARSER_TOOL_NOT_SUPPORTED, parser)
 
-        if not (document_url.endswith(".txt")):
+        if not (document_url.endswith(".htm") or document_url.endswith(".html")):
             raise ParserError(ParserError.DOCUMENT_NOT_SUPPORTED, document_url)
 
         hdrs = {
@@ -92,24 +97,9 @@ class Parser:
             raise ParserError(ParserError.CONNECTION_ERROR, originalError=f)
 
         raw_10k = data
-        doc_start_pattern = re.compile(r"<DOCUMENT>")
-        doc_end_pattern = re.compile(r"</DOCUMENT>")
-
-        type_pattern = re.compile(r"<TYPE>[^\n]+")
-
-        doc_start_is = [x.end() for x in doc_start_pattern.finditer(raw_10k)]
-        doc_end_is = [x.start() for x in doc_end_pattern.finditer(raw_10k)]
-
-        doc_types = [x[len("<TYPE>") :] for x in type_pattern.findall(raw_10k)]
-
-        document = {}
-
-        for doc_type, doc_start, doc_end in zip(doc_types, doc_start_is, doc_end_is):
-            if doc_type == "10-K":
-                document[doc_type] = raw_10k[doc_start:doc_end]
         regex = re.compile(Parser.COMPLETE_REGEX)
 
-        matches = regex.finditer(document["10-K"])
+        matches = regex.finditer(raw_10k)
         matched_list = [(x.group(), x.start(), x.end()) for x in matches]
         if len(matched_list) == 0:
             return {}
@@ -123,7 +113,11 @@ class Parser:
         df.replace("\\.", "", regex=True, inplace=True)
         df.replace(">", "", regex=True, inplace=True)
         df.replace("ITEM", "TEM", regex=True, inplace=True)
-        df.replace("TEM", "ITEM", regex=True, inplace=True)
+        df.replace("TEM", "EM", regex=True, inplace=True)
+        df.replace("Item", "tem", regex=True, inplace=True)
+        df.replace("tem", "em", regex=True, inplace=True)
+        df.replace("em", "Item", regex=True, inplace=True)
+        df.replace("EM", "ITEM", regex=True, inplace=True)
         df.replace("ITEMS", "ITEM", regex=True, inplace=True)
         df.replace("Items", "Item", regex=True, inplace=True)
 
@@ -131,10 +125,14 @@ class Parser:
         for _, row in df.iterrows():
             item_key = str(row["item"])
             if item_key.isupper():
-                for key, value in df.iterrows():
-                    row_key = str(value["item"])
-                    if row_key.lower() == item_key.lower() and not row_key.isupper():
-                        remove_rows.append(key)
+                characters_after = raw_10k[row["start"] : row["start"] + 256]
+                if "(Continued)" in characters_after or "(continued)" in characters_after:
+                    remove_rows.append(_)
+                else:
+                    for key, value in df.iterrows():
+                        row_key = str(value["item"])
+                        if row_key.lower() == item_key.lower() and not row_key.isupper():
+                            remove_rows.append(key)
         df.drop(remove_rows, inplace=True)
         df["item"] = df.item.str.lower()
 
@@ -147,17 +145,17 @@ class Parser:
         for index, item in enumerate(pos_df.index):
             if item in Parser.FIELDS:
                 if index < index_length - 1:
-                    text = document["10-K"][
+                    text = raw_10k[
                         pos_df["start"]
                         .loc[item] : pos_df["start"]
                         .loc[pos_df.index[index + 1]]
                     ]
                 else:
-                    text = document["10-K"][pos_df["start"].loc[item] :]
+                    text = raw_10k[pos_df["start"].loc[item] :]
                 soup = BeautifulSoup(text, parser)
                 document_map[item] = {
                     "html": soup.prettify(),
-                    "text": soup.get_text("\n\n"),
+                    "text": soup.get_text("\n"),
                 }
 
         return document_map
