@@ -27,7 +27,7 @@ class Parser:
     HTML5LIB = 0
     HTML_PARSER = 1
     LXML = 2
-    
+
     _SECTION_NUMBER_REGEX = r"(1(A|B|0|1|2|3|4|5|6)?)|2|3|4|5|6|(7(A)?)|8|(9(A|B)?)"
     _SINGLE_FIELD_REGEX = r"(>(It)?(em|TEM)(\s|&#160;|&nbsp;))|(ITEM(\s|&#160;|&nbsp;))"
     _COMBINED_FIELD_REGEX = (
