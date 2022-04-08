@@ -29,9 +29,11 @@ class Parser:
     LXML = 2
 
     _SECTION_NUMBER_REGEX = r"(1(A|B|0|1|2|3|4|5|6)?)|2|3|4|5|6|(7(A)?)|8|(9(A|B)?)"
-    _SINGLE_FIELD_REGEX = r"(>(It)?(em|TEM)(\s|&#160;|&nbsp;))|(ITEM(\s|&#160;|&nbsp;))"
+    _SINGLE_FIELD_REGEX = (
+        r"(>(Ite|ITE|te|TE|e|E)?(m|M)(\s|&#160;|&nbsp;))|(ITEM(\s|&#160;|&nbsp;))"
+    )
     _COMBINED_FIELD_REGEX = (
-        r"(>(It)?(ems|TEMS)(\s|&#160;|&nbsp;))|(ITEMS(\s|&#160;|&nbsp;))"
+        r"(>(Ite|ITE|te|TE|e|E)?(ms|MS)(\s|&#160;|&nbsp;))|(ITEMS(\s|&#160;|&nbsp;))"
     )
     _END_REGEX = r"\.?"
     COMPLETE_SINGLE_FIELD_REGEX = (
@@ -44,7 +46,7 @@ class Parser:
         rf"({COMPLETE_SINGLE_FIELD_REGEX })|({COMPLETE_COMBINED_FIELD_REGEX})"
     )
 
-    FIELDS = [
+    EXTRACTED_FIELDS = [
         "item1",
         "item1a",
         "item2",
@@ -56,6 +58,30 @@ class Parser:
         "item12",
         "item13",
     ]
+
+    DICT_FIELDS = {
+        "item1": 0,
+        "item1a": 1,
+        "item1b": 2,
+        "item2": 3,
+        "item3": 4,
+        "item4": 5,
+        "item5": 6,
+        "item6": 7,
+        "item7": 8,
+        "item7a": 9,
+        "item8": 10,
+        "item9": 11,
+        "item9a": 12,
+        "item9b": 13,
+        "item10": 14,
+        "item11": 15,
+        "item12": 16,
+        "item13": 17,
+        "item14": 18,
+        "item15": 19,
+        "item16": 20,
+    }
 
     def parse_document(
         self, document_url: str, parser_tool: int = LXML
@@ -117,15 +143,17 @@ class Parser:
 
         df.replace("&#160;", " ", regex=True, inplace=True)
         df.replace("&nbsp;", " ", regex=True, inplace=True)
-        df.replace(" ", "", regex=True, inplace=True)
+        df.replace("\\s", "", regex=True, inplace=True)
         df.replace("\\.", "", regex=True, inplace=True)
         df.replace(">", "", regex=True, inplace=True)
         df.replace("ITEM", "TEM", regex=True, inplace=True)
         df.replace("TEM", "EM", regex=True, inplace=True)
+        df.replace("EM", "M", regex=True, inplace=True)
         df.replace("Item", "tem", regex=True, inplace=True)
         df.replace("tem", "em", regex=True, inplace=True)
-        df.replace("em", "Item", regex=True, inplace=True)
-        df.replace("EM", "ITEM", regex=True, inplace=True)
+        df.replace("em", "m", regex=True, inplace=True)
+        df.replace("m", "Item", regex=True, inplace=True)
+        df.replace("M", "ITEM", regex=True, inplace=True)
         df.replace("ITEMS", "ITEM", regex=True, inplace=True)
         df.replace("Items", "Item", regex=True, inplace=True)
 
@@ -134,10 +162,7 @@ class Parser:
             item_key = str(row["item"])
             if item_key.isupper():
                 characters_after = raw_10k[row["start"] : row["start"] + 256]
-                if (
-                    "(Continued)" in characters_after
-                    or "(continued)" in characters_after
-                ):
+                if re.search(r"\((C|c)ontinued\)", characters_after) is not None:
                     remove_rows.append(_)
                 else:
                     for key, value in df.iterrows():
@@ -153,11 +178,101 @@ class Parser:
         pos_df = df.sort_values("start", ascending=True).drop_duplicates(
             subset=["item"], keep="last"
         )
+
+        pos_df = (
+            pos_df.assign(
+                sort_value=lambda x: [Parser.DICT_FIELDS[value] for value in x["item"]]
+            )
+            .sort_values("sort_value")
+            .drop(labels=["sort_value"], axis=1)
+        )
+        pos_df.reset_index(drop=True, inplace=True)
+        df.reset_index(drop=True, inplace=True)
+        remove_rows = []
+        continue_loop = True
+        while continue_loop:
+            continue_loop = False
+            if pos_df["start"].size > 1:
+                for row in pos_df.itertuples():
+                    if row[0] == 0 and row[2] > pos_df["start"].loc[row[0] + 1]:
+                        remove_rows.append(row[1])
+                        pos_df = pos_df.drop([row[0]]).reset_index(drop=True)
+                        continue_loop = True
+                        break
+                    elif (
+                        row[0] == pos_df["start"].size - 1
+                        and row[2] < pos_df["start"].loc[row[0] - 1]
+                    ):
+                        remove_rows.append(row[1])
+                        pos_df = pos_df.drop([row[0]]).reset_index(drop=True)
+                        continue_loop = True
+                        break
+                    elif (
+                        row[0] > 0
+                        and row[0] < pos_df["start"].size - 1
+                        and row[2] < pos_df["start"].loc[row[0] - 1]
+                    ):
+                        remove_rows.append(row[1])
+                        pos_df = pos_df.drop([row[0]]).reset_index(drop=True)
+                        continue_loop = True
+                        break
+
         pos_df.set_index("item", inplace=True)
+        df_list = []
+        for item in remove_rows:
+            max_value_index = None
+            max_value = -1
+            for row in df.itertuples():
+                if row[1] == item and max_value < row[2]:
+                    location_start = None
+                    location_end = None
+                    index = Parser.DICT_FIELDS[item]
+                    fields = list(Parser.DICT_FIELDS.keys())
+                    for i in range(len(fields[:index]) - 1, -1, -1):
+                        if fields[i] in pos_df.index:
+                            location_start = fields[i]
+                            break
+
+                    for i in range(len(fields[index:])):
+                        if fields[i] in pos_df.index:
+                            location_end = fields[i]
+                            break
+
+                    if location_start is None and location_end is None:
+                        pass
+                    elif location_start is None:
+                        if pos_df["start"].loc[location_end] > row[2]:
+                            max_value_index = row[0]
+                            max_value = row[2]
+                    elif location_end is None:
+                        if pos_df["start"].loc[location_start] < row[2]:
+                            max_value_index = row[0]
+                            max_value = row[2]
+                    else:
+                        if (
+                            pos_df["start"].loc[location_start] < row[2]
+                            and pos_df["start"].loc[location_end] > row[2]
+                        ):
+                            max_value_index = row[0]
+                            max_value = row[2]
+            if max_value_index is not None:
+                df_list.append(
+                    pd.DataFrame(
+                        {
+                            "start": [df["start"].loc[max_value_index]],
+                            "end": [df["end"].loc[max_value_index]],
+                            "item": [df["item"].loc[max_value_index]],
+                        }
+                    ).set_index("item")
+                )
+        if len(df_list) != 0:
+            df_list.append(pos_df)
+            pos_df = pd.concat(df_list).sort_values("start", ascending=True)
+
         document_map = {}
         index_length = len(pos_df.index)
         for index, item in enumerate(pos_df.index):
-            if item in Parser.FIELDS:
+            if item in Parser.EXTRACTED_FIELDS:
                 if index < index_length - 1:
                     text = raw_10k[
                         pos_df["start"]
