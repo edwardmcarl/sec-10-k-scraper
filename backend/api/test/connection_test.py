@@ -333,7 +333,6 @@ class TestAPIConnection(unittest.TestCase):
             "reportDate",
             "filingDate",
             "document",
-            "parserDocument",
             "form",
             "isXBRL",
             "isInlineXBRL",
