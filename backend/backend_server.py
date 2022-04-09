@@ -7,7 +7,6 @@ import zerorpc  # type: ignore
 
 from api.connection import APIConnection
 
-
 count = 0
 
 BIND_ADDRESS = "tcp://127.0.0.1:55555"

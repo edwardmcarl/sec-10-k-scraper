@@ -97,6 +97,63 @@ class TestAPIConnection(unittest.TestCase):
         self.unsupported_form = "40-33"
         self.wrong_form = "I-DO-NOT-EXIST"
 
+    def validate_form_metadata(self, results):
+        self.assertTrue(len(results) != 0)
+        keys = [
+            "cik",
+            "issuing_entity",
+            "state_of_incorporation",
+            "ein",
+            "address",
+            "filings",
+            "forms",
+        ]
+        for key in keys:
+            self.assertTrue(key in results, f"Missing key: {key}")
+
+        for key in results:
+            self.assertTrue(key in keys, f"Unexpected key: {key}")
+
+        self.assertEqual(self.real_cik, results["cik"])
+        self.assertListEqual(["10-K"], results["forms"])
+        address_obj = results["address"]
+        keys = ["mailing", "business"]
+        for key in keys:
+            self.assertTrue(key in address_obj, f"Missing key: {key}")
+
+        keys = [
+            "street1",
+            "street2",
+            "city",
+            "stateOrCountry",
+            "zipCode",
+            "stateOrCountryDescription",
+        ]
+        for key in keys:
+            self.assertTrue(key in address_obj["mailing"])
+            self.assertTrue(key in address_obj["business"])
+
+        for key in address_obj["mailing"]:
+            self.assertTrue(key in keys, f"Unexpected key: {key}")
+
+        for key in address_obj["business"]:
+            self.assertTrue(key in keys, f"Unexpected key: {key}")
+
+    def validate_individual_filing(self, filing_obj):
+        keys = [
+            "reportDate",
+            "filingDate",
+            "document",
+            "form",
+            "isXBRL",
+            "isInlineXBRL",
+        ]
+        for key in keys:
+            self.assertTrue(key in filing_obj, f"Missing key: {key}")
+
+        for key in filing_obj:
+            self.assertTrue(key in keys, f"Unexpected key: {key}")
+
     @patch("connection.urlopen")
     def test_no_internet_connection(self, mock_urlopen):
         mock_urlopen.side_effect = URLError(reason=None)
@@ -261,6 +318,16 @@ class TestAPIConnection(unittest.TestCase):
             exception.values,
         )
 
+    def test_date_range_with_no_filings(self):
+        result = self.api_conn.search_form_info(
+            self.real_cik,
+            forms=["10-K"],
+            start_date="2020-04-04",
+            end_date="2020-04-05",
+        )
+        self.validate_form_metadata(result)
+        self.assertListEqual([], result["filings"])
+
     def test_no_forms_input(self):
         self.assertEqual(None, self.api_conn.search_form_info(self.real_cik, forms=[]))
 
@@ -294,62 +361,10 @@ class TestAPIConnection(unittest.TestCase):
             )
 
         results = self.api_conn.search_form_info(self.real_cik)
-
-        self.assertTrue(len(results) != 0)
-        keys = [
-            "cik",
-            "issuing_entity",
-            "state_of_incorporation",
-            "ein",
-            "address",
-            "filings",
-            "forms",
-        ]
-        for key in keys:
-            self.assertTrue(key in results, f"Missing key: {key}")
-
-        for key in results:
-            self.assertTrue(key in keys, f"Unexpected key: {key}")
-
-        self.assertEqual(self.real_cik, results["cik"])
-        self.assertListEqual(["10-K"], results["forms"])
-        address_obj = results["address"]
-        keys = ["mailing", "business"]
-        for key in keys:
-            self.assertTrue(key in address_obj, f"Missing key: {key}")
-
-        keys = [
-            "street1",
-            "street2",
-            "city",
-            "stateOrCountry",
-            "zipCode",
-            "stateOrCountryDescription",
-        ]
-        for key in keys:
-            self.assertTrue(key in address_obj["mailing"])
-            self.assertTrue(key in address_obj["business"])
-
-        for key in address_obj["mailing"]:
-            self.assertTrue(key in keys, f"Unexpected key: {key}")
-
-        for key in address_obj["business"]:
-            self.assertTrue(key in keys, f"Unexpected key: {key}")
-
-        filing_obj = results["filings"][0]
-        keys = [
-            "reportDate",
-            "filingDate",
-            "document",
-            "form",
-            "isXBRL",
-            "isInlineXBRL",
-        ]
-        for key in keys:
-            self.assertTrue(key in filing_obj, f"Missing key: {key}")
-
-        for key in filing_obj:
-            self.assertTrue(key in keys, f"Unexpected key: {key}")
+        self.validate_form_metadata(results)
+        filing_objects = results["filings"]
+        for filing in filing_objects:
+            self.validate_individual_filing(filing)
 
     def test_rate_limiting_without_network(self):
         def acquisition_time():

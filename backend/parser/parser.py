@@ -66,7 +66,7 @@ class Parser(RateLimited):
         "item12",
         "item13",
     ]
-    
+
     DICT_FIELDS = {
         "item1": 0,
         "item1a": 1,
@@ -100,8 +100,6 @@ class Parser(RateLimited):
                 be set to 10 reqeusts per second or fewer for the SEC API.
         """
         super().__init__(limit_counter)
-
-
 
     def parse_document(
         self, document_url: str, parser_tool: int = LXML

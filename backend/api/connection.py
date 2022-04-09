@@ -41,7 +41,6 @@ class FilingData(DataClassDictMixin):
     filingDate: str
     form: str
     document: str
-    parserDocument: str
     isXBRL: int
     isInlineXBRL: int
 
@@ -451,7 +450,6 @@ class APIConnection:
                                     recent_filings["filingDate"][i],
                                     recent_filings["form"][i],
                                     f"https://sec.gov/Archives/edgar/data/{cik}/{accession_number}/{doc}",
-                                    f"https://sec.gov/Archives/edgar/data/{cik}/{accession_number}/{raw_accession_number}.txt",
                                     is_xbrl,
                                     is_inline_xbrl,
                                 )
