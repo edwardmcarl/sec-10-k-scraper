@@ -1,13 +1,21 @@
 # Reason for escaping mypy type check: https://bugs.launchpad.net/beautifulsoup/+bug/1843791
 # Can create a 'stublist' but wanted to get this commit first
 import gzip
+import os
 import re
+import sys
 from typing import Dict
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 import pandas as pd  # type: ignore
-from bs4 import BeautifulSoup  # type: ignore
+from bs4 import BeautifulSoup
+
+folder_dir = os.path.dirname(os.path.realpath(__file__))
+parent_dir = os.path.dirname(folder_dir)
+sys.path.append(parent_dir)
+from misc.rate_limiting import RateLimited  # noqa: E402
+from misc.rate_limiting import RateLimitTracker  # noqa: E402
 
 
 class ParserError(Exception):
@@ -23,7 +31,7 @@ class ParserError(Exception):
         super().__init__(self.message)
 
 
-class Parser:
+class Parser(RateLimited):
     HTML5LIB = 0
     HTML_PARSER = 1
     LXML = 2
@@ -41,6 +49,16 @@ class Parser:
         "item12",
         "item13",
     ]
+
+    def __init__(self, limit_counter: RateLimitTracker) -> None:
+        """
+        Constructor. Takes in a RateLimitTracker to handle the rate-limiting of API requests.
+
+            Parameters:
+                limit_counter: a RateLimitTracker. As of 2022, it should
+                be set to 10 reqeusts per second or fewer for the SEC API.
+        """
+        super().__init__(limit_counter)
 
     def parse_document(
         self, document_url: str, parser_tool: int = LXML
@@ -66,6 +84,9 @@ class Parser:
             "Accept": "*/*",
         }
         req = Request(document_url, headers=hdrs, method="GET")
+
+        # Block until we can make a request without hitting the rate limit
+        self._block_on_rate_limit()
         try:
             with urlopen(req) as res:
                 data = res.read()

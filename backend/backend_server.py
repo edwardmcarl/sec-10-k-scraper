@@ -7,15 +7,8 @@ import zerorpc  # type: ignore
 
 from api.connection import APIConnection
 
+
 count = 0
-
-
-class Counter:
-    def increment(self) -> int:
-        global count
-        count = count + 1
-        return count
-
 
 BIND_ADDRESS = "tcp://127.0.0.1:55555"
 
@@ -28,6 +21,7 @@ def kill_signal_listener(srv: zerorpc.Server):
 
 
 def main():
+
     api_instance = APIConnection()
     server = zerorpc.Server(api_instance)
     server.bind(BIND_ADDRESS)
