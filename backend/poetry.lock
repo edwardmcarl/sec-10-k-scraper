@@ -232,6 +232,21 @@ python-versions = "*"
 altgraph = ">=0.15"
 
 [[package]]
+name = "mashumaro"
+version = "3.0"
+description = "Fast serialization framework on top of dataclasses"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+typing-extensions = "*"
+
+[package.extras]
+msgpack = ["msgpack (>=0.5.6)"]
+yaml = ["pyyaml (>=3.13)"]
+
+[[package]]
 name = "mccabe"
 version = "0.6.1"
 description = "McCabe checker, plugin for flake8"
@@ -519,7 +534,7 @@ python-versions = ">=3.7"
 name = "typing-extensions"
 version = "4.1.1"
 description = "Backported and Experimental Type Hints for Python 3.6+"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -609,7 +624,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.10, <3.11"
-content-hash = "7c21fe56e8bbfc9a937f4582b82d195fe560d54f41226d7abc7aaa907b546ed9"
+content-hash = "5b17e63e1520c37a668c532efe5075d85e7c1dd02439a9add629fbe4083d82e2"
 
 [metadata.files]
 altgraph = [
@@ -896,6 +911,10 @@ lxml = [
 macholib = [
     {file = "macholib-1.16-py2.py3-none-any.whl", hash = "sha256:5a0742b587e6e57bfade1ab90651d4877185bf66fd4a176a488116de36878229"},
     {file = "macholib-1.16.tar.gz", hash = "sha256:001bf281279b986a66d7821790d734e61150d52f40c080899df8fefae056e9f7"},
+]
+mashumaro = [
+    {file = "mashumaro-3.0-py3-none-any.whl", hash = "sha256:2537081099d004d0bdb2916c7d5c6e7616f10defd860b90ffa93fcf5902e4e60"},
+    {file = "mashumaro-3.0.tar.gz", hash = "sha256:0e5c06faf17c9b7731e138c280fec56d8ccf9ffaccb7b0e2d9d8a923c850ff66"},
 ]
 mccabe = [
     {file = "mccabe-0.6.1-py2.py3-none-any.whl", hash = "sha256:ab8a6258860da4b6677da4bd2fe5dc2c659cff31b3ee4f7f5d64e79735b80d42"},

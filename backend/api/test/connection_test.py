@@ -181,9 +181,6 @@ class TestAPIConnection(unittest.TestCase):
             )
         results = self.api_conn.search(self.search_key_results)
         self.assertTrue(len(results) != 0)
-        keys = ["cik", "entity"]
-        for key in keys:
-            self.assertTrue(key in results[0])
 
     def test_wrong_cik_number_format(self):
         with self.assertRaises(APIConnectionError) as cm:
@@ -257,7 +254,7 @@ class TestAPIConnection(unittest.TestCase):
         )
 
     def test_no_forms_input(self):
-        self.assertEqual({}, self.api_conn.search_form_info(self.real_cik, forms=[]))
+        self.assertEqual(None, self.api_conn.search_form_info(self.real_cik, forms=[]))
 
     def test_wrong_or_unsupported_forms_input(self):
         with self.assertRaises(APIConnectionError) as cm:
@@ -289,6 +286,7 @@ class TestAPIConnection(unittest.TestCase):
             )
 
         results = self.api_conn.search_form_info(self.real_cik)
+
         self.assertTrue(len(results) != 0)
         keys = [
             "cik",
