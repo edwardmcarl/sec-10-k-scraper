@@ -64,6 +64,10 @@ class TestAPIConnectionError(unittest.TestCase):
         )
         self.assertTupleEqual((), self.conn_err.values, "Incorrect value property")
 
+    def test_original_error(self):
+        self.assertEqual(None, self.start_date_err.originalError, None)
+        self.assertTrue(isinstance(self.serv_err.originalError, HTTPError))
+
 
 class TestAPIConnection(unittest.TestCase):
     def setUp(self):
