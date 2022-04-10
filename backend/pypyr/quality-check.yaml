@@ -68,5 +68,11 @@ steps:
   - name: pypyr.steps.cmd
     in: 
      cmd: poetry run python parser/test/parser_test.py
+  - name: pypyr.steps.echo
+    in:
+      echoMe: backend/misc
+  - name: pypyr.steps.cmd
+    in: 
+     cmd: poetry run python misc/test/rate_limiting_test.py
  
 ...

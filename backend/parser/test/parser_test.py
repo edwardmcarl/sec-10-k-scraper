@@ -62,7 +62,6 @@ class TestParser(unittest.TestCase):
         self.parser = Parser(self.rate_limiter)
         self.document_url = "https://www.sec.gov/Archives/edgar/data/0000037996/000003799621000012/f-20201231.htm"  # 2020 10-K document for Ford
         self.wrong_document_url = "wrong_document.txt"
-        
 
     @patch("parser.urlopen")
     def test_no_internet_connection(self, mock_urlopen):
