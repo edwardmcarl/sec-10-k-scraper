@@ -108,6 +108,15 @@ class TestParser(unittest.TestCase):
         self.assertEqual(ParserError.DOCUMENT_NOT_SUPPORTED, exception.message)
         self.assertTupleEqual((self.wrong_document_url,), exception.values)
 
+    def test_legit_call(self):
+        # We expect all fields to be present in this extraction
+        output = self.parser.parse_document(self.document_url)
+        for key in output:
+            self.assertTrue(key in Parser.EXTRACTED_FIELDS)
+
+        for key in Parser.EXTRACTED_FIELDS:
+            self.assertTrue(key in list(output))
+
 
 if __name__ == "__main__":
     unittest.main()
