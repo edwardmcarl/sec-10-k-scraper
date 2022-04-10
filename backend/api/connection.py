@@ -10,7 +10,57 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from mashumaro import DataClassDictMixin
-from zerorpc import Server  # type: ignore # noqa: F401
+
+# Weird way to import a parent module in Python
+folder_dir = os.path.dirname(os.path.realpath(__file__))
+parent_dir = os.path.dirname(folder_dir)
+sys.path.append(parent_dir)
+
+from misc import serializable_dataclass  # noqa: E402
+
+
+@dataclass
+class SearchData(DataClassDictMixin):
+    cik: str
+    entity: str
+
+
+@dataclass
+class AddressData(DataClassDictMixin):
+    street1: str
+    street2: str
+    city: str
+    stateOrCountry: str
+    zipCode: str
+    stateOrCountryDescription: str
+
+
+@dataclass
+class FilingData(DataClassDictMixin):
+    reportDate: str
+    filingDate: str
+    form: str
+    document: str
+    isXBRL: int
+    isInlineXBRL: int
+
+
+@dataclass
+class BulkAddressData(DataClassDictMixin):
+    mailing: AddressData
+    business: AddressData
+
+
+@dataclass
+class FormData(DataClassDictMixin):
+    cik: str
+    issuing_entity: str
+    state_of_incorporation: str
+    ein: str
+    forms: List[str]
+    address: BulkAddressData
+    filings: List[FilingData]
+
 
 # Weird way to import a parent module in Python
 folder_dir = os.path.dirname(os.path.realpath(__file__))
@@ -219,7 +269,7 @@ class APIConnection:
         if len(search_key) == 0:
             raise APIConnectionError(APIConnectionError.SEARCH_KEY_ERROR)
 
-        # Request to server
+        # Define request to server
         data_sent = str.encode(f'{{"keysTyped":"{search_key}"}}')
         req = Request(APIConnection.SEARCH_URL, data=data_sent, method="POST")
 
@@ -257,9 +307,7 @@ class APIConnection:
         forms: List[str] = ["10-K"],
         start_date: str = MINIMUM_SEARCH_START_DATE,
         end_date: str = date.today().isoformat(),
-    ) -> Union[
-        FormData, None
-    ]:  # Dict[object,object] will error on being assigned most other dicts
+    ) -> Union[FormData, None]:
         """
         Calls to the SEC EDGAR interface to search through the database to return entities
          that match the search key
@@ -397,6 +445,7 @@ class APIConnection:
             "Accept": "*/*",
         }
         req = Request(data_api, headers=hdrs, method="GET")
+
         try:
             with urlopen(req) as res:
                 data = res.read()
@@ -452,7 +501,6 @@ class APIConnection:
                                     recent_filings["filingDate"][i],
                                     recent_filings["form"][i],
                                     f"https://sec.gov/Archives/edgar/data/{cik}/{accession_number}/{doc}",
-                                    f"https://sec.gov/Archives/edgar/data/{cik}/{accession_number}/{raw_accession_number}.txt",
                                     is_xbrl,
                                     is_inline_xbrl,
                                 )

@@ -2,15 +2,22 @@ import os
 import sys
 import unittest
 import warnings
+from datetime import datetime, timedelta
 from unittest.mock import patch
 from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
 
+import gevent  # type: ignore
+
 # Weird way to import a parent module in Python
 folder_dir = os.path.dirname(os.path.realpath(__file__))
 parent_dir = os.path.dirname(folder_dir)
+grandparent_dir = os.path.dirname(parent_dir)
 sys.path.append(parent_dir)
+sys.path.append(grandparent_dir)
 from connection import APIConnection, APIConnectionError  # type: ignore # noqa: E402
+
+from misc.rate_limiting import RateLimitTracker  # type: ignore # noqa: E402
 
 
 class TestAPIConnectionError(unittest.TestCase):
@@ -72,6 +79,7 @@ class TestAPIConnection(unittest.TestCase):
                 self._conn = True
         except URLError:
             self._conn = False
+        self.rate_limiter = RateLimitTracker()
         self.api_conn = APIConnection()
         self.search_key_no_results = "xxxsdxsdcsdsfdsfdsdfsddf"
         self.search_key_results = "ford"
@@ -88,6 +96,63 @@ class TestAPIConnection(unittest.TestCase):
         self.forms = ["10-k"]
         self.unsupported_form = "40-33"
         self.wrong_form = "I-DO-NOT-EXIST"
+
+    def validate_form_metadata(self, results):
+        self.assertTrue(len(results) != 0)
+        keys = [
+            "cik",
+            "issuing_entity",
+            "state_of_incorporation",
+            "ein",
+            "address",
+            "filings",
+            "forms",
+        ]
+        for key in keys:
+            self.assertTrue(key in results, f"Missing key: {key}")
+
+        for key in results:
+            self.assertTrue(key in keys, f"Unexpected key: {key}")
+
+        self.assertEqual(self.real_cik, results["cik"])
+        self.assertListEqual(["10-K"], results["forms"])
+        address_obj = results["address"]
+        keys = ["mailing", "business"]
+        for key in keys:
+            self.assertTrue(key in address_obj, f"Missing key: {key}")
+
+        keys = [
+            "street1",
+            "street2",
+            "city",
+            "stateOrCountry",
+            "zipCode",
+            "stateOrCountryDescription",
+        ]
+        for key in keys:
+            self.assertTrue(key in address_obj["mailing"])
+            self.assertTrue(key in address_obj["business"])
+
+        for key in address_obj["mailing"]:
+            self.assertTrue(key in keys, f"Unexpected key: {key}")
+
+        for key in address_obj["business"]:
+            self.assertTrue(key in keys, f"Unexpected key: {key}")
+
+    def validate_individual_filing(self, filing_obj):
+        keys = [
+            "reportDate",
+            "filingDate",
+            "document",
+            "form",
+            "isXBRL",
+            "isInlineXBRL",
+        ]
+        for key in keys:
+            self.assertTrue(key in filing_obj, f"Missing key: {key}")
+
+        for key in filing_obj:
+            self.assertTrue(key in keys, f"Unexpected key: {key}")
 
     @patch("connection.urlopen")
     def test_no_internet_connection(self, mock_urlopen):
@@ -253,6 +318,16 @@ class TestAPIConnection(unittest.TestCase):
             exception.values,
         )
 
+    def test_date_range_with_no_filings(self):
+        result = self.api_conn.search_form_info(
+            self.real_cik,
+            forms=["10-K"],
+            start_date="2020-04-04",
+            end_date="2020-04-05",
+        )
+        self.validate_form_metadata(result)
+        self.assertListEqual([], result["filings"])
+
     def test_no_forms_input(self):
         self.assertEqual(None, self.api_conn.search_form_info(self.real_cik, forms=[]))
 
@@ -286,62 +361,27 @@ class TestAPIConnection(unittest.TestCase):
             )
 
         results = self.api_conn.search_form_info(self.real_cik)
+        
+        self.validate_form_metadata(results)
+        filing_objects = results["filings"]
+        for filing in filing_objects:
+            self.validate_individual_filing(filing)
 
-        self.assertTrue(len(results) != 0)
-        keys = [
-            "cik",
-            "issuing_entity",
-            "state_of_incorporation",
-            "ein",
-            "address",
-            "filings",
-            "forms",
-        ]
-        for key in keys:
-            self.assertTrue(key in results, f"Missing key: {key}")
+    def test_rate_limiting_without_network(self):
+        def acquisition_time():
+            self.rate_limiter.acquire()
+            return datetime.now()
 
-        for key in results:
-            self.assertTrue(key in keys, f"Unexpected key: {key}")
-
-        self.assertEqual(self.real_cik, results["cik"])
-        self.assertListEqual(["10-K"], results["forms"])
-        address_obj = results["address"]
-        keys = ["mailing", "business"]
-        for key in keys:
-            self.assertTrue(key in address_obj, f"Missing key: {key}")
-
-        keys = [
-            "street1",
-            "street2",
-            "city",
-            "stateOrCountry",
-            "zipCode",
-            "stateOrCountryDescription",
-        ]
-        for key in keys:
-            self.assertTrue(key in address_obj["mailing"])
-            self.assertTrue(key in address_obj["business"])
-
-        for key in address_obj["mailing"]:
-            self.assertTrue(key in keys, f"Unexpected key: {key}")
-
-        for key in address_obj["business"]:
-            self.assertTrue(key in keys, f"Unexpected key: {key}")
-
-        filing_obj = results["filings"][0]
-        keys = [
-            "reportDate",
-            "filingDate",
-            "document",
-            "form",
-            "isXBRL",
-            "isInlineXBRL",
-        ]
-        for key in keys:
-            self.assertTrue(key in filing_obj, f"Missing key: {key}")
-
-        for key in filing_obj:
-            self.assertTrue(key in keys, f"Unexpected key: {key}")
+        tasks = [gevent.spawn(acquisition_time) for i in range(25)]
+        gevent.joinall(tasks, timeout=5)
+        times = [task.value for task in tasks]
+        self.assertEqual(len(times), 25)  # assert that all tasks finished
+        times.sort()
+        # Assert that there were >~1.5 seconds between first and last task completion.
+        # The first ten requests will be fired off immediately, to jump to the 10 requests/second,
+        # followed by ~1 request / 0.1 seconds.
+        time_difference = times[24] - times[0]  # a timedelta object
+        self.assertTrue(timedelta(seconds=1.4) < time_difference)
 
 
 if __name__ == "__main__":
