@@ -9,7 +9,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 import pandas as pd  # type: ignore
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup  # type: ignore
 
 folder_dir = os.path.dirname(os.path.realpath(__file__))
 parent_dir = os.path.dirname(folder_dir)

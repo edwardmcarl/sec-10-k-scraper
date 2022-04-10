@@ -56,12 +56,12 @@ steps:
   - name: pypyr.steps.echo
     in:
       echoMe: --- Unit Testing Python ---
-  # - name: pypyr.steps.echo
-  #   in:
-  #     echoMe: backend/api/connection
-  # - name: pypyr.steps.cmd
-  #   in: 
-  #    cmd: poetry run python api/test/connection_test.py
+  - name: pypyr.steps.echo
+    in:
+      echoMe: backend/api/connection
+  - name: pypyr.steps.cmd
+    in: 
+     cmd: poetry run python api/test/connection_test.py
   - name: pypyr.steps.echo
     in:
       echoMe: backend/parser

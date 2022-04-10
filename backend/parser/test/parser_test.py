@@ -9,8 +9,12 @@ from urllib.request import urlopen
 # Weird way to import a parent module in Python
 folder_dir = os.path.dirname(os.path.realpath(__file__))
 parent_dir = os.path.dirname(folder_dir)
+grandparent_dir = os.path.dirname(parent_dir)
 sys.path.append(parent_dir)
+sys.path.append(grandparent_dir)
 from parser import Parser, ParserError  # type: ignore # noqa: E40
+
+from misc.rate_limiting import RateLimitTracker  # type: ignore # noqa: E402
 
 
 class TestParserError(unittest.TestCase):
@@ -54,9 +58,11 @@ class TestParser(unittest.TestCase):
                 self._conn = True
         except URLError:
             self._conn = False
-        self.parser = Parser()
+        self.rate_limiter = RateLimitTracker()
+        self.parser = Parser(self.rate_limiter)
         self.document_url = "https://www.sec.gov/Archives/edgar/data/0000037996/000003799621000012/f-20201231.htm"  # 2020 10-K document for Ford
         self.wrong_document_url = "wrong_document.txt"
+        
 
     @patch("parser.urlopen")
     def test_no_internet_connection(self, mock_urlopen):
