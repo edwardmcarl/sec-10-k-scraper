@@ -642,6 +642,7 @@ lock-version = "1.1"
 python-versions = ">=3.10, <3.11"
 content-hash = "6e6d036b7b16186f120bd0597a1537e0dd81abb1e86a045f3865c93f6f5f9144"
 
+
 [metadata.files]
 altgraph = [
     {file = "altgraph-0.17.2-py2.py3-none-any.whl", hash = "sha256:743628f2ac6a7c26f5d9223c91ed8ecbba535f506f4b6f558885a8a56a105857"},

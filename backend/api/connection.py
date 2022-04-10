@@ -62,6 +62,57 @@ class FormData(DataClassDictMixin):
     filings: List[FilingData]
 
 
+# Weird way to import a parent module in Python
+folder_dir = os.path.dirname(os.path.realpath(__file__))
+parent_dir = os.path.dirname(folder_dir)
+sys.path.append(parent_dir)
+from misc import serializable_dataclass  # noqa: E402
+
+
+@dataclass
+class SearchData(DataClassDictMixin):
+    cik: str
+    entity: str
+
+
+@dataclass
+class AddressData(DataClassDictMixin):
+    street1: str
+    street2: str
+    city: str
+    stateOrCountry: str
+    zipCode: str
+    stateOrCountryDescription: str
+
+
+@dataclass
+class FilingData(DataClassDictMixin):
+    reportDate: str
+    filingDate: str
+    form: str
+    document: str
+    parserDocument: str
+    isXBRL: int
+    isInlineXBRL: int
+
+
+@dataclass
+class BulkAddressData(DataClassDictMixin):
+    mailing: AddressData
+    business: AddressData
+
+
+@dataclass
+class FormData(DataClassDictMixin):
+    cik: str
+    issuing_entity: str
+    state_of_incorporation: str
+    ein: str
+    forms: List[str]
+    address: BulkAddressData
+    filings: List[FilingData]
+
+
 class APIConnectionError(Exception):
     """
     Exception class for the APIConnection class

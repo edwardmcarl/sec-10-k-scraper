@@ -361,6 +361,7 @@ class TestAPIConnection(unittest.TestCase):
             )
 
         results = self.api_conn.search_form_info(self.real_cik)
+        
         self.validate_form_metadata(results)
         filing_objects = results["filings"]
         for filing in filing_objects:
