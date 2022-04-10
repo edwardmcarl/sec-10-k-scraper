@@ -2,22 +2,15 @@ import os
 import sys
 import unittest
 import warnings
-from datetime import datetime, timedelta
 from unittest.mock import patch
 from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
 
-import gevent  # type: ignore
-
 # Weird way to import a parent module in Python
 folder_dir = os.path.dirname(os.path.realpath(__file__))
 parent_dir = os.path.dirname(folder_dir)
-grandparent_dir = os.path.dirname(parent_dir)
 sys.path.append(parent_dir)
-sys.path.append(grandparent_dir)
 from connection import APIConnection, APIConnectionError  # type: ignore # noqa: E402
-
-from misc.rate_limiting import RateLimitTracker  # type: ignore # noqa: E402
 
 
 class TestAPIConnectionError(unittest.TestCase):
@@ -71,6 +64,10 @@ class TestAPIConnectionError(unittest.TestCase):
         )
         self.assertTupleEqual((), self.conn_err.values, "Incorrect value property")
 
+    def test_original_error(self):
+        self.assertEqual(None, self.start_date_err.originalError, None)
+        self.assertTrue(isinstance(self.serv_err.originalError, HTTPError))
+
 
 class TestAPIConnection(unittest.TestCase):
     def setUp(self):
@@ -79,7 +76,6 @@ class TestAPIConnection(unittest.TestCase):
                 self._conn = True
         except URLError:
             self._conn = False
-        self.rate_limiter = RateLimitTracker()
         self.api_conn = APIConnection()
         self.search_key_no_results = "xxxsdxsdcsdsfdsfdsdfsddf"
         self.search_key_results = "ford"
@@ -361,27 +357,11 @@ class TestAPIConnection(unittest.TestCase):
             )
 
         results = self.api_conn.search_form_info(self.real_cik)
-        
+
         self.validate_form_metadata(results)
         filing_objects = results["filings"]
         for filing in filing_objects:
             self.validate_individual_filing(filing)
-
-    def test_rate_limiting_without_network(self):
-        def acquisition_time():
-            self.rate_limiter.acquire()
-            return datetime.now()
-
-        tasks = [gevent.spawn(acquisition_time) for i in range(25)]
-        gevent.joinall(tasks, timeout=5)
-        times = [task.value for task in tasks]
-        self.assertEqual(len(times), 25)  # assert that all tasks finished
-        times.sort()
-        # Assert that there were >~1.5 seconds between first and last task completion.
-        # The first ten requests will be fired off immediately, to jump to the 10 requests/second,
-        # followed by ~1 request / 0.1 seconds.
-        time_difference = times[24] - times[0]  # a timedelta object
-        self.assertTrue(timedelta(seconds=1.4) < time_difference)
 
 
 if __name__ == "__main__":

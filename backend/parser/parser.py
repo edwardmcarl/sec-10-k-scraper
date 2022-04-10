@@ -9,7 +9,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 import pandas as pd  # type: ignore
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup  # type: ignore
 
 folder_dir = os.path.dirname(os.path.realpath(__file__))
 parent_dir = os.path.dirname(folder_dir)
@@ -19,7 +19,6 @@ from misc.rate_limiting import RateLimitTracker  # noqa: E402
 
 
 class ParserError(Exception):
-    PARSER_TOOL_NOT_SUPPORTED = "Specified parser tool not supported"
     DOCUMENT_NOT_SUPPORTED = "Parsing for this document is not supported"
     SERVER_ERROR = "The SEC EDGAR server could not process the request"
     CONNECTION_ERROR = "The application failed to reach the server"
@@ -28,6 +27,8 @@ class ParserError(Exception):
 
     def __init__(self, message: str, *values: object, originalError=None) -> None:
         self.message = message
+        self.values = values
+        self.originalError = originalError
         super().__init__(self.message)
 
 
@@ -101,19 +102,10 @@ class Parser(RateLimited):
         """
         super().__init__(limit_counter)
 
-    def parse_document(
-        self, document_url: str, parser_tool: int = LXML
-    ) -> Dict[str, Dict[str, str]]:
+    def parse_document(self, document_url: str) -> Dict[str, Dict[str, str]]:
 
         # This logic is influenced by this GitHub gist: https://gist.github.com/anshoomehra/ead8925ea291e233a5aa2dcaa2dc61b2
-        if parser_tool == Parser.HTML5LIB:
-            parser = "html5lib"
-        elif parser_tool == Parser.HTML_PARSER:
-            parser = "html.parser"
-        elif parser_tool == Parser.LXML:
-            parser = "lxml"
-        else:
-            raise ParserError(ParserError.PARSER_TOOL_NOT_SUPPORTED, parser)
+        parser = "lxml"
 
         if not (document_url.endswith(".htm") or document_url.endswith(".html")):
             raise ParserError(ParserError.DOCUMENT_NOT_SUPPORTED, document_url)
