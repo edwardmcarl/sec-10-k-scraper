@@ -9,6 +9,7 @@ import {useState, useEffect} from 'react';
 import {Button, Col, Container, Dropdown, Row, InputGroup, FormControl, FormLabel, Table, ListGroup, Spinner, Form, Offcanvas, Alert, Image, Modal} from 'react-bootstrap';
 import DatePicker from 'react-date-picker';
 import { string } from 'prop-types';
+import { contextIsolated } from 'process';
 
 // interface FilingSearchResult {
   
@@ -255,7 +256,18 @@ function App() {
 
   const [smShow, setSmShow] = useState(false);
 
+  const [spinnerHidden, setSpinnerHidden] = useState(true);
+
   const [path, setPath] = useState('');
+
+  const ref = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    if (ref.current !== null) {
+      ref.current.setAttribute('directory', '');
+      ref.current.setAttribute('webkitdirectory', '');
+    }
+  }, [ref]);
 
 
   const addQueueFilingToMap = (f: Filing) => { // add filing to queue
@@ -304,6 +316,7 @@ function App() {
   const handleExtractInfoClick = () => {
     // include perfromNER in the call
     console.log('NER: '+ performNER);
+    setSpinnerHidden(false);
 
   };
 
@@ -641,6 +654,7 @@ function App() {
         <Row className="mb-3">
         <label htmlFor="pathDirectory">Choose Path for Download: </label>
           <input
+            ref={ref} 
             type="file"
             id="pathDirectory"
             onChange={handleOutputPath}
@@ -648,16 +662,22 @@ function App() {
           <text>{path}</text>
 
         </Row>
+        {/* NER Check */}
         <Row className="mb-3">
           <Col>
             <Form.Check id = "NERCheck" type="checkbox" onChange={handleNERCheck} label="Apply Named Entity Recognition to Queue" />
           </Col>
         </Row>
+        {/* Download Button */}
         <Row className="mb-3">
           <Col>
-            <Button variant="primary" onClick={handleExtractInfoClick}>Extract Information and Download</Button>
+            <Button variant="primary" onClick={handleExtractInfoClick}>Extract & Download</Button>
+          </Col>
+          <Col>
+            <Spinner animation="border" role="status" variant="primary" hidden={spinnerHidden}></Spinner>
           </Col>
         </Row>
+        {/* Queue Table */}
         <Row className="mb-3">
           <Col> 
             <Table striped bordered hover id="queue-table" table-layout="fixed">
