@@ -10,8 +10,6 @@ import {Button, Col, Container, Dropdown, Row, InputGroup, FormControl, FormLabe
 import DatePicker from 'react-date-picker';
 import { string } from 'prop-types';
 import { contextIsolated } from 'process';
-
-// interface FilingSearchResult {
   
 class Result { // result
   cik: string; // cik number
@@ -21,8 +19,6 @@ class Result { // result
     this.name = nameIn;
   }
 }
-
-// }
 
 // for user inputs through file uploads
 // assuming only 10-K to start
@@ -116,7 +112,6 @@ declare module 'react' {
     webkitdirectory?: string;
   }
 }
-
 
 function ResultsRow(props: ResultsRowProps) { // row for results
   const handleInfoClick = () => { // handle info click
@@ -263,21 +258,11 @@ function App() {
 
   const [performNER, setPerfromNER] = useState(false); // check box for NER changes this value
 
-  const [smShow, setSmShow] = useState(false);
+  const [smShow, setSmShow] = useState(false); 
 
   const [spinnerHidden, setSpinnerHidden] = useState(true);
 
   const [path, setPath] = useState('');
-
-  const ref = React.useRef<HTMLInputElement>(null);
-
-  React.useEffect(() => {
-    if (ref.current !== null) {
-      ref.current.setAttribute('directory', '');
-      ref.current.setAttribute('webkitdirectory', '');
-    }
-  }, [ref]);
-
 
   const addQueueFilingToMap = (f: Filing) => { // add filing to queue
    let newQueueFilingMap = new Map<string,Filing>(queueFilingMap); // create a new map copying the old queue
@@ -326,7 +311,6 @@ function App() {
     // include perfromNER in the call
     console.log('NER: '+ performNER);
     setSpinnerHidden(false);
-
   };
 
   const handleOutputPath = (e: any) => {
@@ -449,31 +433,7 @@ function App() {
         }
         setQueueFilingMap(newQueueFilingMap);
       }
-      /* else if(e !== null && e.target !== null && e.target.result !== null){
-        const text = e.target.result;
-        console.log(text);
-      } */
     };
-    /* reader.onload = (e: ProgressEvent<FileReader>) => {
-      if(e !== null){
-        if(e.target !== null){
-          const text = e.target.result;
-          console.log(text);
-          if(reader !== null && reader.result !== null && reader.result instanceof string) {
-            const res = reader.result;
-            if(res instanceof string)
-            {
-              const lines = res.split('\n').map(function (line) {
-                return line.split(' ')
-              })
-            }
-            const lines = reader.result.split('\n').map(function (line) {
-              return line.split(' ')
-            })
-          }
-        }
-      }
-    }; */
     reader.readAsText(e.target.files[0]);
   };
 
