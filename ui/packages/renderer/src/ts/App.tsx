@@ -109,6 +109,15 @@ interface FormData { // data for the form
   filings: Array<FilingData>; // filings
 }
 
+declare module 'react' {
+  interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
+    // extends React's attributes
+    directory?: string;
+    webkitdirectory?: string;
+  }
+}
+
+
 function ResultsRow(props: ResultsRowProps) { // row for results
   const handleInfoClick = () => { // handle info click
     if (props.isQueued) { // if filing is in queue
@@ -654,7 +663,8 @@ function App() {
         <Row className="mb-3">
         <label htmlFor="pathDirectory">Choose Path for Download: </label>
           <input
-            ref={ref} 
+            // ref={ref} 
+            webkitdirectory=""
             type="file"
             id="pathDirectory"
             onChange={handleOutputPath}
