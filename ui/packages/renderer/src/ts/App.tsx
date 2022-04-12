@@ -9,8 +9,7 @@ import {useState, useEffect} from 'react';
 import {Button, Col, Container, Dropdown, Row, InputGroup, FormControl, FormLabel, Table, ListGroup, Spinner, Form, Offcanvas, Alert, Image, Modal} from 'react-bootstrap';
 import DatePicker from 'react-date-picker';
 import { string } from 'prop-types';
-
-// interface FilingSearchResult {
+import { contextIsolated } from 'process';
   
 class Result { // result
   cik: string; // cik number
@@ -20,8 +19,6 @@ class Result { // result
     this.name = nameIn;
   }
 }
-
-// }
 
 // for user inputs through file uploads
 // assuming only 10-K to start
@@ -106,6 +103,14 @@ interface FormData { // data for the form
   forms: Array<string>; // forms
   address: BulkAddressData; // address
   filings: Array<FilingData>; // filings
+}
+
+declare module 'react' {
+  interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
+    // extends React's attributes
+    directory?: string;
+    webkitdirectory?: string;
+  }
 }
 
 function ResultsRow(props: ResultsRowProps) { // row for results
@@ -253,8 +258,11 @@ function App() {
 
   const [performNER, setPerfromNER] = useState(false); // check box for NER changes this value
 
-  const [smShow, setSmShow] = useState(false);
+  const [smShow, setSmShow] = useState(false); 
 
+  const [spinnerHidden, setSpinnerHidden] = useState(true);
+
+  const [path, setPath] = useState('');
 
   const addQueueFilingToMap = (f: Filing) => { // add filing to queue
    let newQueueFilingMap = new Map<string,Filing>(queueFilingMap); // create a new map copying the old queue
@@ -302,7 +310,19 @@ function App() {
   const handleExtractInfoClick = () => {
     // include perfromNER in the call
     console.log('NER: '+ performNER);
+    setSpinnerHidden(false);
+  };
 
+  const handleOutputPath = (e: any) => {
+    e.preventDefault();
+    let path = e.target.files[0].path;
+    let indexOfSlash = path.lastIndexOf('/');
+    if(indexOfSlash === -1) {
+      indexOfSlash = path.lastIndexOf('\\');
+    }
+    path = path.substring(0, indexOfSlash + 1);
+    console.log(path);
+    setPath(path);
   };
   
   // experimenting https://devrecipes.net/typeahead-with-react-hooks-and-bootstrap/
@@ -381,53 +401,39 @@ function App() {
             console.log(lines[i][0]);
             console.log(lines[i][1]);
             console.log(lines[i][2]);
-            let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [lines[i][0], [type], lines[i][1], lines[i][2]]);
-            if(filingResults !== null) {
-            console.log(filingResults);
-              let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, type, filing.filingDate, filing.document, false));
-              console.log(filingRows);
-              //setFilingResultList(filingRows); //takes in something that is a Filing[]
-              // this seems... messy
-              for(let ind = 0; ind < filingRows.length; ind++){
-                console.log(filingRows[ind]);
-                addQueueFilingToMap(filingRows[ind]);
-                newQueueFilingMap = new Map<string,Filing>(newQueueFilingMap);
-                newQueueFilingMap.set(filingRows[ind].documentAddress10k, filingRows[ind]);
+            try {
+              let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [lines[i][0], [type], lines[i][1], lines[i][2]]);
+              if(filingResults !== null) {
+              console.log(filingResults);
+                let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, type, filing.filingDate, filing.document, false));
+                console.log(filingRows);
+                //setFilingResultList(filingRows); //takes in something that is a Filing[]
+                // this seems... messy
+                for(let ind = 0; ind < filingRows.length; ind++){
+                  console.log(filingRows[ind]);
+                  addQueueFilingToMap(filingRows[ind]);
+                  newQueueFilingMap = new Map<string,Filing>(newQueueFilingMap);
+                  newQueueFilingMap.set(filingRows[ind].documentAddress10k, filingRows[ind]);
+                }
               }
             }
+            catch(error: any){
+              let strError = error.message;
+              strError = strError.split(':').pop();
+              let errorMessage: AlertData = new AlertData(strError, true); // create error message for empty search
+              setAlertMessage(errorMessage); // set alert message            }
           }
+        }
           else {
-            // This is where some error handling would happen
-            console.log('You need to put in a CIK and a start date and an end date for line ' + (i + 1));
+            let strError = 'You need to put in a CIK and a start date and an end date for line ' + (i + 1);
+            let errorMessage: AlertData = new AlertData(strError, true); // create error message for empty search
+            setAlertMessage(errorMessage); // set alert message
+
           }
         }
         setQueueFilingMap(newQueueFilingMap);
       }
-      /* else if(e !== null && e.target !== null && e.target.result !== null){
-        const text = e.target.result;
-        console.log(text);
-      } */
     };
-    /* reader.onload = (e: ProgressEvent<FileReader>) => {
-      if(e !== null){
-        if(e.target !== null){
-          const text = e.target.result;
-          console.log(text);
-          if(reader !== null && reader.result !== null && reader.result instanceof string) {
-            const res = reader.result;
-            if(res instanceof string)
-            {
-              const lines = res.split('\n').map(function (line) {
-                return line.split(' ')
-              })
-            }
-            const lines = reader.result.split('\n').map(function (line) {
-              return line.split(' ')
-            })
-          }
-        }
-      }
-    }; */
     reader.readAsText(e.target.files[0]);
   };
 
@@ -485,9 +491,6 @@ function App() {
           <DatePicker onChange={setStartDate} value={startDate}/>
         </Col>
         <Col>
-          <form>
-            <input type="file" id="fileUpload" accept=".txt" onChange={handleFileUpload}/>
-          </form>
           <text>End Date: </text>
           <DatePicker onChange={setEndDate} value={endDate} />
         </Col>
@@ -547,7 +550,7 @@ function App() {
         <Row className="mb-3">
           <Col>
             <form>
-              <input type="file" id="fileUpload" accept=".txt"/>
+              <input type="file" id="fileUpload" accept=".txt" onChange={handleFileUpload}/>
             </form>
           </Col>
         </Row>
@@ -618,6 +621,34 @@ function App() {
       </Offcanvas.Header>
       <Offcanvas.Body>
         <Row className="mb-3">
+        <label htmlFor="pathDirectory">Choose Path for Download: </label>
+          <input
+            // ref={ref} 
+            webkitdirectory=""
+            type="file"
+            id="pathDirectory"
+            onChange={handleOutputPath}
+          />
+          <text>{path}</text>
+
+        </Row>
+        {/* NER Check */}
+        <Row className="mb-3">
+          <Col>
+            <Form.Check id = "NERCheck" type="checkbox" onChange={handleNERCheck} label="Apply Named Entity Recognition to Queue" />
+          </Col>
+        </Row>
+        {/* Download Button */}
+        <Row className="mb-3">
+          <Col>
+            <Button variant="primary" onClick={handleExtractInfoClick}>Extract & Download</Button>
+          </Col>
+          <Col>
+            <Spinner animation="border" role="status" variant="primary" hidden={spinnerHidden}></Spinner>
+          </Col>
+        </Row>
+        {/* Queue Table */}
+        <Row className="mb-3">
           <Col> 
             <Table striped bordered hover id="queue-table" table-layout="fixed">
               <thead>
@@ -643,16 +674,7 @@ function App() {
             </Table>
           </Col>
         </Row>
-        <Row className="mb-3">
-          <Col>
-            <Form.Check id = "NERCheck" type="checkbox" onChange={handleNERCheck} label="Apply Named Entity Recognition to Queue" />
-          </Col>
-        </Row>
-        <Row className="mb-3">
-          <Col>
-            <Button variant="primary" onClick={handleExtractInfoClick}>Extract Information</Button>
-          </Col>
-        </Row>
+        
       </Offcanvas.Body>
     </Offcanvas>
     </div>
