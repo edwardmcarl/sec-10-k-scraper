@@ -2,12 +2,15 @@
 # Can create a 'stublist' but wanted to get this commit first
 import gzip
 import re
-from typing import Dict
+from typing import Any, Dict, List, Set
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+import en_core_web_sm  # type: ignore # The smallest spacy model has virtually equivalent NER performance to the largest models, while running much faster
 import pandas as pd  # type: ignore
 from bs4 import BeautifulSoup  # type: ignore
+
+nlp = en_core_web_sm.load()
 
 
 class ParserError(Exception):
@@ -288,3 +291,59 @@ class Parser:
                 }
 
         return document_map
+
+    def _get_section_ner_labels(self, section_string: str):
+        proper_name_labels = ["PERSON", "ORG"]
+        place_name_labels = ["GPE", "FAC", "LOC"]
+        section_targets = {
+            "item1a": proper_name_labels,
+            "item2": place_name_labels,
+            "item3": proper_name_labels,
+            "item7": proper_name_labels,
+            "item7a": proper_name_labels,
+            "item10": ["PERSON"],
+            "item12": proper_name_labels,
+            "item13": proper_name_labels,
+        }
+        if section_string in section_targets.keys():
+            return section_targets[section_string]
+        else:
+            return []
+
+    def apply_named_entity_recognition(
+        self, doc_map: Dict[str, Any]
+    ) -> Dict[str, Dict[str, Set[str]]]:
+        def extract_specific_labels(
+            string: str, labels_to_gather: List[str]
+        ) -> Dict[str, Set[str]]:
+
+            list_of_labels = nlp.pipe_labels["ner"]
+            entities_by_label: Dict[str, List[str]] = {}
+            # initialize dict of lists; can't use dict.fromkeys() without all elements pointing to the same list
+            for label in list_of_labels:
+                entities_by_label[label] = []
+
+            processed_doc = nlp(string)
+
+            # populate entities_by_label
+            for entity in processed_doc.ents:
+                if entity.label_ in labels_to_gather:
+                    entities_by_label[entity.label_].append(entity.text)
+
+            return {label: set(entities_by_label[label]) for label in labels_to_gather}
+
+        section_texts = {
+            section: extract_specific_labels(
+                doc_map[section]["text"], self._get_section_ner_labels(section)
+            )
+            for section in doc_map.keys()
+        }
+        return section_texts
+
+
+if __name__ == "__main__":
+    url = "https://www.sec.gov/Archives/edgar/data/0000037996/000003799621000012/f-20201231.htm"
+    parser = Parser()
+    doc = parser.parse_document(url)
+    dict = parser.apply_named_entity_recognition(doc)
+    print(dict)
