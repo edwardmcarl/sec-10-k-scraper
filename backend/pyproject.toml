@@ -18,6 +18,8 @@ requests = "^2.27.1"
 pandas = "^1.4.1"
 mashumaro = "^3.0"
 spacy = "^3.2.4"
+types-beautifulsoup4 = "^4.10.18"
+types-urllib3 = "^1.26.11"
 
 
 [tool.poetry.dev-dependencies]
