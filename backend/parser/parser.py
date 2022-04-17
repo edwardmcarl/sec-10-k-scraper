@@ -293,6 +293,18 @@ class Parser:
         return document_map
 
     def _get_section_ner_labels(self, section_string: str):
+        """
+        Function that, given a section name (e.g. "item1", "item1a", "item2"),
+        returns a list of NER tags, as strings, that the parser should extract
+        from the body of that section. Returns an empty list for sections that should
+        not have NER data extracted.
+
+        For a list of possible tags, see
+        https://spacy.io/models/en
+        To see the meanings of the tags, see
+        https://github.com/explosion/spaCy/blob/master/spacy/glossary.py
+
+        """
         proper_name_labels = ["PERSON", "ORG"]
         place_name_labels = ["GPE", "FAC", "LOC"]
         section_targets = {
@@ -310,27 +322,35 @@ class Parser:
         else:
             return []
 
-    def apply_named_entity_recognition(
+    def _apply_named_entity_recognition(
         self, doc_map: Dict[str, Any]
-    ) -> Dict[str, Dict[str, Set[str]]]:
+    ) -> Dict[str, Set[str]]:
+        """
+        Given the output of the parser for a 10-K form, applies NER to the extracted test.
+
+        Returns a Dict[str, Set(str)] where each key-value pair is:
+            key:    An element of EXTRACTED_FIELDS, if that field was detected in the document
+            values: A Set of strings, where each string is a relevant named entity extracted
+                    from the text of that field.
+
+        The function _get_section_ner_labels() is used to determine which types of entity are
+        included in the set for each field.
+
+        """
+
         def extract_specific_labels(
             string: str, labels_to_gather: List[str]
-        ) -> Dict[str, Set[str]]:
-
-            list_of_labels = nlp.pipe_labels["ner"]
-            entities_by_label: Dict[str, List[str]] = {}
-            # initialize dict of lists; can't use dict.fromkeys() without all elements pointing to the same list
-            for label in list_of_labels:
-                entities_by_label[label] = []
+        ) -> Set[str]:
 
             processed_doc = nlp(string)
 
-            # populate entities_by_label
+            # Compile all the tokens matching the labels into a single set
+            tokens_matching_labels = set()
             for entity in processed_doc.ents:
                 if entity.label_ in labels_to_gather:
-                    entities_by_label[entity.label_].append(entity.text)
+                    tokens_matching_labels.add(entity.text)
 
-            return {label: set(entities_by_label[label]) for label in labels_to_gather}
+            return tokens_matching_labels
 
         section_texts = {
             section: extract_specific_labels(
@@ -339,11 +359,3 @@ class Parser:
             for section in doc_map.keys()
         }
         return section_texts
-
-
-if __name__ == "__main__":
-    url = "https://www.sec.gov/Archives/edgar/data/0000037996/000003799621000012/f-20201231.htm"
-    parser = Parser()
-    doc = parser.parse_document(url)
-    dict = parser.apply_named_entity_recognition(doc)
-    print(dict)
