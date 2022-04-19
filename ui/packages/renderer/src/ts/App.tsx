@@ -162,6 +162,17 @@ function QueueRow(props: QueueRowProps) { // row for queue
     props.removeFromQueue(props.filing); // remove from queue
   };
 
+  const areDocumentsDownloading = () => {
+    if (props.status === DocumentState.IN_QUEUE) {
+      return false;
+    } else if (props.status === DocumentState.IN_PROGRESS) {
+      return true;
+    }
+    else {
+      return false;
+    }
+  };
+
   return (  // return the row
     <tr>
       <td>{props.filing.entityName}</td>
@@ -169,7 +180,7 @@ function QueueRow(props: QueueRowProps) { // row for queue
       <td>{props.filing.filingType}</td>
       <td>{props.filing.filingDate}</td>
       <td align="center">
-        <Button variant="danger" onClick={(event) => {handleRemoveClick();}}>X</Button>
+        <Button variant="danger" disabled = {areDocumentsDownloading()} onClick={(event) => {handleRemoveClick();}}>X</Button>
       </td>
     </tr>
   );
@@ -650,6 +661,7 @@ function App() {
             webkitdirectory=""
             type="file"
             id="pathDirectory"
+            disabled={!spinnerOn}
             onChange={handleOutputPath}
           />
           <text>{path}</text>
@@ -658,7 +670,7 @@ function App() {
         {/* NER Check */}
         <Row className="mb-3">
           <Col>
-            <FormCheck id = "NERCheck" type="checkbox" onChange={handleNERCheck} label="Apply Named Entity Recognition to Queue" />
+            <FormCheck id = "NERCheck" disabled = {!spinnerOn} type="checkbox" onChange={handleNERCheck} label="Apply Named Entity Recognition to Queue" />
           </Col>
         </Row>
         {/* Download Button */}
