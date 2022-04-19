@@ -3,6 +3,7 @@ import threading
 from parser.parser import Parser
 from pathlib import Path
 from typing import Any, Dict, List  # noqa:F401
+from urllib import request
 
 import gevent  # type: ignore
 import zerorpc  # type: ignore
@@ -18,8 +19,20 @@ class BackendServer(APIConnection, DataWriter, Parser):
         filing_list: List[Dict[str, Any]],
         output_folder_path: str = "./output",
     ):
-        # create the path if it doesn't exist
+        # create the path / output folder if it doesn't exist
         Path(output_folder_path).mkdir(parents=True, exist_ok=True)
+        try:
+            for filing in filing_list:
+                request.urlretrieve(
+                    filing["documentAddress10k"],
+                    Path(
+                        output_folder_path,
+                        filing["entityName"],
+                        f"{filing['filingType']}_{filing['filingDate']}.htm",
+                    ),
+                )
+        except Exception:
+            print("Issue saving HTML")
         spreadsheet_contents = self._load_main_spreadsheet(output_folder_path)
         parse_tasks = [
             gevent.spawn(self.parse_document, filing["documentAddress10k"])
