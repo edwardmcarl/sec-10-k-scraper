@@ -40,13 +40,19 @@ class Filing { // filing info
   filingDate: string; // filing date
   documentAddress10k: string; // document address for 10-K
   extractInfo: boolean; // true/false if user wants to extract info from 10-K
-  constructor(entityNameIn: string, cikNumberIn: string, filingTypeIn: string, filingDateIn: string, documentAddress10kIn: string, extractInfoIn: boolean) {
+  stateOfIncorporation: string; // state of incorporation
+  ein: string; // ein
+  hqAddress: AddressData;
+  constructor(entityNameIn: string, cikNumberIn: string, filingTypeIn: string, filingDateIn: string, documentAddress10kIn: string, extractInfoIn: boolean, stateOfIncorporationIn: string, einIn: string, addressIn: AddressData) {
     this.entityName = entityNameIn;
     this.cikNumber = cikNumberIn;
     this.filingType = filingTypeIn;
     this.filingDate = filingDateIn;
     this.documentAddress10k = documentAddress10kIn;
     this.extractInfo = extractInfoIn;
+    this.stateOfIncorporation = stateOfIncorporationIn;
+    this.ein = einIn;
+    this.hqAddress = addressIn;
   }
 }
 
@@ -256,7 +262,7 @@ function App() {
 
   const [alertMessage, setAlertMessage] = useState(new AlertData('', false));
 
-  const [performNER, setPerfromNER] = useState(false); // check box for NER changes this value
+  const [performNER, setPerformNER] = useState(false); // check box for NER changes this value
 
   const [smShow, setSmShow] = useState(false); 
 
@@ -283,7 +289,7 @@ function App() {
     try {
       let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [result.cik, [formType], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
       if(filingResults !== null) { // if filingResults is not null
-        let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false)); // create filing rows
+        let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false, filingResults!.state_of_incorporation, filingResults!.ein, filingResults!.address.business)); // create filing rows
         setFilingResultList(filingRows); //takes in something that is a Filing[]
       }
       if(filingResultList.length === 0) { // Checking to see if no results were found
@@ -304,17 +310,20 @@ function App() {
   };
 
   const handleNERCheck = () => { // Triggers when NER checkbox is clicked
-    setPerfromNER(!performNER); // set performNER to the opposite of what it was
+    setPerformNER(!performNER); // set performNER to the opposite of what it was
   };
 
-  const handleExtractInfoClick = () => {
+  const handleExtractInfoClick = async () => {
     // include perfromNER in the call
     console.log('NER: '+ performNER);
-    setSpinnerHidden(false);
+    // setSpinnerHidden(false);
+    console.log(Array.from(queueFilingMap.values()));
+    console.log(await window.requestRPC.procedure('process_filing_set', [Array.from(queueFilingMap.values()), await window.desktopPath.getDesktopPath()]));
   };
 
   const handleOutputPath = (e: any) => {
     e.preventDefault();
+    console.log(e.target.value);
     let path = e.target.files[0].path;
     let indexOfSlash = path.lastIndexOf('/');
     if(indexOfSlash === -1) {
@@ -361,7 +370,7 @@ function App() {
     try {
       let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [selectedResult.cik, [formType], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
       if(filingResults !== null) { // if filingResults is not null
-        let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false)); // create filing rows
+        let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false, filingResults!.state_of_incorporation, filingResults!.ein, filingResults!.address.business)); // create filing rows
         setFilingResultList(filingRows); //takes in something that is a Filing[]
       }
     }
@@ -405,7 +414,7 @@ function App() {
               let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [lines[i][0], [type], lines[i][1], lines[i][2]]);
               if(filingResults !== null) {
               console.log(filingResults);
-                let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, type, filing.filingDate, filing.document, false));
+                let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, type, filing.filingDate, filing.document, false, filingResults!.state_of_incorporation, filingResults!.ein, filingResults!.address.business));
                 console.log(filingRows);
                 //setFilingResultList(filingRows); //takes in something that is a Filing[]
                 // this seems... messy

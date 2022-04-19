@@ -20,6 +20,9 @@ mashumaro = "^3.0"
 spacy = "^3.2.4"
 types-beautifulsoup4 = "^4.10.18"
 types-urllib3 = "^1.26.11"
+pandas-stubs = "^1.2.0"
+pyinstaller-hooks-contrib = "^2022.4"
+openpyxl = "^3.0.9"
 
 
 [tool.poetry.dev-dependencies]

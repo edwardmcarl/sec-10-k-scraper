@@ -7,11 +7,11 @@ steps:
 
  - name: pypyr.steps.cmd
    in:
-    cmd: poetry run pyinstaller --onefile backend_server.spec
+    cmd: poetry run pyinstaller backend_server.spec -y
  
  - name: helpers.move-file
    in:
-     from: ./dist
+     from: ./dist/backend_server
      to: ../ui/extraResources
 
  - name: pypyr.steps.echo

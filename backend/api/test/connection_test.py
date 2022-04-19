@@ -10,7 +10,8 @@ from urllib.request import urlopen
 folder_dir = os.path.dirname(os.path.realpath(__file__))
 parent_dir = os.path.dirname(folder_dir)
 sys.path.append(parent_dir)
-from connection import APIConnection, APIConnectionError  # type: ignore # noqa: E402
+from connection import APIConnection  # type: ignore # noqa: E402
+from connection import APIConnectionError  # type: ignore # noqa: E402
 
 
 class TestAPIConnectionError(unittest.TestCase):

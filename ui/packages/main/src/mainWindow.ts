@@ -31,6 +31,7 @@ async function createWindow() {
     ipcMain.handle('rpc', async (event, props) => {
       return remoteCall(props.name, props.args);
     });
+    ipcMain.handle('getPath', ()=>app.getPath('desktop'));
   });
 
   /**

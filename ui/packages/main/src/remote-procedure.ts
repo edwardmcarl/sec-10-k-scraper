@@ -1,6 +1,6 @@
 import * as zerorpc from 'zerorpc';
-const client = new zerorpc.Client();
-client.connect('tcp://localhost:55555');
+const client = new zerorpc.Client({heartbeatInterval: 3600000});
+client.connect('tcp://localhost:55565');
  //client.on("error", blah)
 
 export async function remoteCall(funcName:string, args: any[] = []) {
