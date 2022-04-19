@@ -6,7 +6,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.min.js';
 import React from 'react';
 import {useState, useEffect} from 'react';
-import {Button, Col, Container, Dropdown, Row, InputGroup, FormControl, FormLabel, Table, ListGroup, Spinner, Form, Offcanvas, Alert, Image, Modal} from 'react-bootstrap';
+import {Button, Col, Container, Dropdown, Row, FormControl, FormCheck, FormGroup, Table, ListGroup, ListGroupItem, Spinner, Offcanvas, OffcanvasHeader, OffcanvasBody, OffcanvasTitle, Alert, Image, Modal, ModalBody, ModalHeader, ModalTitle } from 'react-bootstrap';
 import DatePicker from 'react-date-picker';
 import { string } from 'prop-types';
 import { contextIsolated } from 'process';
@@ -476,8 +476,8 @@ function App() {
 
     {/* Search Bar Two */}
     <Container>
-      <Form.Group className="typeahead-form-group mb-3">
-        <Form.Control
+      <FormGroup className="typeahead-form-group mb-3">
+        <FormControl
           placeholder="Entity/CIK"
           id="searchInput"
           type="text"
@@ -490,13 +490,13 @@ function App() {
             results !== undefined &&
             results.length > 0 &&
             results.map((result: Result) => (
-              <ListGroup.Item
+              <ListGroupItem
                 key={result.cik}
                 className="typeahead-list-group-item"
                 onClick={() => onNameSelected(result)}
               >
                 {result.cik + ' | ' + result.name}
-              </ListGroup.Item>
+              </ListGroupItem>
             ))}
           {results !== undefined && !results.length && isLoading && (
             <div className="typeahead-spinner-container">
@@ -504,7 +504,7 @@ function App() {
             </div>
           )}
         </ListGroup>
-      </Form.Group>
+      </FormGroup>
     </Container>
 
     {/* Start and End Dates*/}
@@ -521,14 +521,14 @@ function App() {
         <Col className='input-group'>
           <text>Form Type:&nbsp;&nbsp;&nbsp;</text>
           <Dropdown onSelect={handleFormDropdownClick}>
-            <Dropdown.Toggle variant="secondary" id="form-dropdown">
+            <DropdownToggle variant="secondary" id="form-dropdown">
               {formType}
-            </Dropdown.Toggle>
-            <Dropdown.Menu>
-              <Dropdown.Item eventKey='10-K'>10-K</Dropdown.Item>
-              <Dropdown.Item eventKey='10-Q'>10-Q</Dropdown.Item>
-              <Dropdown.Item eventKey='20-F'>20-F</Dropdown.Item>
-            </Dropdown.Menu>
+            </DropdownToggle>
+            <DropdownMenu>
+              <DropdownItem eventKey='10-K'>10-K</DropdownItem>
+              <DropdownItem eventKey='10-Q'>10-Q</DropdownItem>
+              <DropdownItem eventKey='20-F'>20-F</DropdownItem>
+            </DropdownMenu>
           </Dropdown>
         </Col>
       </Row>
@@ -555,19 +555,19 @@ function App() {
               onHide={() => setSmShow(false)}
               aria-labelledby="example-modal-sizes-title-sm"
             >     
-            <Modal.Header closeButton>
-              <Modal.Title id="example-modal-sizes-title-sm">
+            <ModalHeader closeButton>
+              <ModalTitle id="example-modal-sizes-title-sm">
                 File Upload Setup
-              </Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
+              </ModalTitle>
+            </ModalHeader>
+            <ModalBody>
               [CIK] [START_DATE] [END_DATE]
               <br/>
               [CIK] [START_DATE] [END_DATE]
               <br/>
               <br/>
               * Dates are in ISO format (YYYY-MM-DD)
-            </Modal.Body>         
+            </ModalBody>         
             </Modal>
           </Col>
         </Row>
@@ -640,10 +640,10 @@ function App() {
 
     {/* Queue drawer/canvas */}
     <Offcanvas show={show} onHide={handleClose} placement='end' width='99%'>
-      <Offcanvas.Header closeButton>
-        <Offcanvas.Title>Queue</Offcanvas.Title>
-      </Offcanvas.Header>
-      <Offcanvas.Body>
+      <OffcanvasHeader closeButton>
+        <OffcanvasTitle>Queue</OffcanvasTitle>
+      </OffcanvasHeader>
+      <OffcanvasBody>
         <Row className="mb-3">
         <label htmlFor="pathDirectory">Choose Path for Download: </label>
           <input
@@ -658,7 +658,7 @@ function App() {
         {/* NER Check */}
         <Row className="mb-3">
           <Col>
-            <Form.Check id = "NERCheck" type="checkbox" onChange={handleNERCheck} label="Apply Named Entity Recognition to Queue" />
+            <FormCheck id = "NERCheck" type="checkbox" onChange={handleNERCheck} label="Apply Named Entity Recognition to Queue" />
           </Col>
         </Row>
         {/* Download Button */}
@@ -698,7 +698,7 @@ function App() {
             </Table>
           </Col>
         </Row>
-      </Offcanvas.Body>
+      </OffcanvasBody>
     </Offcanvas>
     </div>
   );
