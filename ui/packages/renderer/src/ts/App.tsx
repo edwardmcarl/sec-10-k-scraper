@@ -11,6 +11,11 @@ import DatePicker from 'react-date-picker';
 import { string } from 'prop-types';
 import { contextIsolated } from 'process';
 import { BrowserWindow, Dialog } from 'electron';
+
+//Done to make testing possible with react$ in ui/test/specs
+const DropdownToggle = Dropdown.Toggle;
+const DropdownMenu = Dropdown.Menu;
+const DropdownItem = Dropdown.Item;
   
 class Result { // result
   cik: string; // cik number
