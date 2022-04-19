@@ -3,17 +3,28 @@
 import gzip
 import os
 import re
-from typing import Any, Dict, List, Set
 import sys
+from typing import Any, Dict, List, Set
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-import en_core_web_sm  # type: ignore # The smallest spacy model has virtually equivalent NER performance to the largest models, while running much faster
 import pandas as pd  # type: ignore
+import spacy  # type: ignore # The smallest spacy model has virtually equivalent NER performance to the largest models, while running much faster
 from bs4 import BeautifulSoup  # type: ignore
 
 
-nlp = en_core_web_sm.load()
+def resource_path(relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller"""
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
+
+nlp = spacy.load(resource_path("resources/en_core_web_sm-3.2.0"))
 folder_dir = os.path.dirname(os.path.realpath(__file__))
 parent_dir = os.path.dirname(folder_dir)
 sys.path.append(parent_dir)
@@ -209,7 +220,7 @@ class Parser(RateLimited):
         while continue_loop:
             continue_loop = False
             if pos_df["start"].size > 1:
-                for row in pos_df.itertuples():
+                for row in pos_df.itertuples():  # type: ignore
                     if row[0] == 0 and row[2] > pos_df["start"].loc[row[0] + 1]:
                         remove_rows.append(row[1])
                         pos_df = pos_df.drop([row[0]]).reset_index(drop=True)
@@ -238,7 +249,7 @@ class Parser(RateLimited):
         for item in remove_rows:
             max_value_index = None
             max_value = -1
-            for row in df.itertuples():
+            for row in df.itertuples():  # type: ignore
                 if row[1] == item and max_value < row[2]:
                     location_start = None
                     location_end = None

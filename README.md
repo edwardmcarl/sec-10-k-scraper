@@ -41,7 +41,7 @@ To launch the backend, which would normally by `python backend_server.py`, run
 `poetry run python backend_server.py`.
 
 #### To Build The App:
-`poetry run pyinstaller backend_server.py --onefile`
+`poetry run pyinstaller backend_server.spec --onefile`
 The resulting executable will be in `backend/dist`.
 
 
