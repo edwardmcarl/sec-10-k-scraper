@@ -17,6 +17,8 @@
         "postinstall": "npx electron-rebuild",
         "test": "npm run test:main && npm run test:preload && npm run test:renderer && npm run test:e2e",
         "test:e2e": "npm run build && vitest run",
+        "test:e2e:with_compile": "cd ../backend && poetry run pypyr pypyr/build-backend && cd ../ui && npm run compile && npx wdio run ./wdio.conf.js",
+        "test:e2e:no_compile": "npx wdio run ./wdio.conf.js",
         "test:main": "vitest run -r packages/main --passWithNoTests",
         "test:preload": "vitest run -r packages/preload --passWithNoTests",
         "test:renderer": "vitest run -r packages/renderer --passWithNoTests",
