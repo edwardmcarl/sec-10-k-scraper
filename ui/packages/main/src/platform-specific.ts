@@ -17,10 +17,8 @@ function platformExecutableName() {
             return EXECUTABLE_BASE_NAME + '.exe';
             break;
         case 'linux':
+        case 'darwin':
             return EXECUTABLE_BASE_NAME;
-            break;
-        case 'darwin': // todo: determine suffix
-            return EXECUTABLE_BASE_NAME + '.app';
             break;
         default:
             return null;
