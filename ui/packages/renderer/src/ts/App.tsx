@@ -696,34 +696,6 @@ function App() {
         </Row>
         {/* Queue Table */}
         <Row className="mb-3">
-        <label htmlFor="pathDirectory">Choose Path for Download: </label>
-          <input
-            // ref={ref} 
-            webkitdirectory=""
-            type="file"
-            id="pathDirectory"
-            onChange={handleOutputPath}
-          />
-          <text>{path}</text>
-
-        </Row>
-        {/* NER Check */}
-        <Row className="mb-3">
-          <Col>
-            <FormCheck id = "NERCheck" type="checkbox" onChange={handleNERCheck} label="Apply Named Entity Recognition to Queue" />
-          </Col>
-        </Row>
-        {/* Download Button */}
-        <Row className="mb-3">
-          <Col>
-            <Button variant="primary" onClick={handleExtractInfoClick}>Extract & Download</Button>
-          </Col>
-          <Col>
-            <Spinner animation="border" role="status" variant="primary" hidden={!spinnerOn}></Spinner>
-          </Col>
-        </Row>
-        {/* Queue Table */}
-        <Row className="mb-3">
           <Col> 
             <Table striped bordered hover id="queue-table" table-layout="fixed">
               <thead>
