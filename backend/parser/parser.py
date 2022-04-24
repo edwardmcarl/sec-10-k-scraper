@@ -31,11 +31,6 @@ def resource_path(relative_path):
 
 
 nlp = spacy.load(resource_path("resources/en_core_web_sm-3.2.0"))
-folder_dir = os.path.dirname(os.path.realpath(__file__))
-parent_dir = os.path.dirname(folder_dir)
-sys.path.append(parent_dir)
-from misc.rate_limiting import RateLimited  # noqa: E402
-from misc.rate_limiting import RateLimitTracker  # noqa: E402
 
 
 class ParserError(Exception):

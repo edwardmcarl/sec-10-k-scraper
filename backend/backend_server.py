@@ -61,7 +61,6 @@ class BackendServer(APIConnection, DataWriter, Parser):
 BIND_ADDRESS = "tcp://127.0.0.1:55565"
 
 
-
 def kill_signal_listener(srv: zerorpc.Server):
     while True:
         msg = input()

@@ -710,7 +710,7 @@ function App() {
         {/* NER Check */}
         <Row className="mb-3">
           <Col>
-            <Form.Check id = "NERCheck" type="checkbox" onChange={handleNERCheck} label="Apply Named Entity Recognition to Queue" />
+            <FormCheck id = "NERCheck" type="checkbox" onChange={handleNERCheck} label="Apply Named Entity Recognition to Queue" />
           </Col>
         </Row>
         {/* Download Button */}
@@ -719,7 +719,7 @@ function App() {
             <Button variant="primary" onClick={handleExtractInfoClick}>Extract & Download</Button>
           </Col>
           <Col>
-            <Spinner animation="border" role="status" variant="primary" hidden={spinnerHidden}></Spinner>
+            <Spinner animation="border" role="status" variant="primary" hidden={!spinnerOn}></Spinner>
           </Col>
         </Row>
         {/* Queue Table */}
