@@ -61,6 +61,7 @@ class BackendServer(APIConnection, DataWriter, Parser):
 BIND_ADDRESS = "tcp://127.0.0.1:55565"
 
 
+
 def kill_signal_listener(srv: zerorpc.Server):
     while True:
         msg = input()
@@ -72,6 +73,7 @@ def main():
     rate_limiter = RateLimitTracker(5)
     api_instance = BackendServer(rate_limiter)
     server = zerorpc.Server(api_instance, heartbeat=3600)
+
     server.bind(BIND_ADDRESS)
 
     # new thread - listens in on stdin()

@@ -12,6 +12,12 @@ import pandas as pd  # type: ignore
 import spacy  # type: ignore # The smallest spacy model has virtually equivalent NER performance to the largest models, while running much faster
 from bs4 import BeautifulSoup  # type: ignore
 
+folder_dir = os.path.dirname(os.path.realpath(__file__))
+parent_dir = os.path.dirname(folder_dir)
+sys.path.append(parent_dir)
+from misc.rate_limiting import RateLimited  # noqa: E402
+from misc.rate_limiting import RateLimitTracker  # noqa: E402
+
 
 def resource_path(relative_path):
     """Get absolute path to resource, works for dev and for PyInstaller"""

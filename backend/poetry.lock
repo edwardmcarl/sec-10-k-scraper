@@ -856,6 +856,30 @@ category = "main"
 optional = false
 python-versions = ">=3.6"
 
+[[package]]
+name = "types-beautifulsoup4"
+version = "4.10.18"
+description = "Typing stubs for beautifulsoup4"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "types-urllib3"
+version = "1.26.11"
+description = "Typing stubs for urllib3"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "typing-extensions"
+version = "4.1.1"
+description = "Backported and Experimental Type Hints for Python 3.6+"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
 [package.dependencies]
 click = ">=7.1.1,<9.0.0"
 
@@ -984,6 +1008,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 lock-version = "1.1"
 python-versions = ">=3.10, <3.11"
 content-hash = "695904f1216dcfd330f863aa1a6198df81c75ab433a6d56f6e2e7843bf43a1a7"
+
 
 [metadata.files]
 altgraph = [

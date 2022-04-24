@@ -6,10 +6,16 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.min.js';
 import React from 'react';
 import {useState, useEffect} from 'react';
-import {Button, Col, Container, Dropdown, Row, InputGroup, FormControl, FormLabel, Table, ListGroup, Spinner, Form, Offcanvas, Alert, Image, Modal} from 'react-bootstrap';
+import {Button, Col, Container, Dropdown, Row, FormControl, FormCheck, FormGroup, Table, ListGroup, ListGroupItem, Spinner, Offcanvas, OffcanvasHeader, OffcanvasBody, OffcanvasTitle, Alert, Image, Modal, ModalBody, ModalHeader, ModalTitle } from 'react-bootstrap';
 import DatePicker from 'react-date-picker';
 import { string } from 'prop-types';
 import { contextIsolated } from 'process';
+import { BrowserWindow, Dialog } from 'electron';
+
+//Done to make testing possible with react$ in ui/test/specs
+const DropdownToggle = Dropdown.Toggle;
+const DropdownMenu = Dropdown.Menu;
+const DropdownItem = Dropdown.Item;
   
 class Result { // result
   cik: string; // cik number
@@ -33,6 +39,13 @@ class UserInput {
   }
 }
 
+enum DocumentState {
+  SEARCH = 1,
+  IN_QUEUE,
+  IN_PROGRESS,
+  DONE,
+}
+
 class Filing { // filing info
   entityName: string; // name of entity
   cikNumber: string; // cik number
@@ -43,7 +56,9 @@ class Filing { // filing info
   stateOfIncorporation: string; // state of incorporation
   ein: string; // ein
   hqAddress: AddressData;
-  constructor(entityNameIn: string, cikNumberIn: string, filingTypeIn: string, filingDateIn: string, documentAddress10kIn: string, extractInfoIn: boolean, stateOfIncorporationIn: string, einIn: string, addressIn: AddressData) {
+  status: DocumentState;
+
+  constructor(entityNameIn: string, cikNumberIn: string, filingTypeIn: string, filingDateIn: string, documentAddress10kIn: string, extractInfoIn: boolean, stateOfIncorporationIn: string, einIn: string, addressIn: AddressData, statusIn: DocumentState) {
     this.entityName = entityNameIn;
     this.cikNumber = cikNumberIn;
     this.filingType = filingTypeIn;
@@ -53,6 +68,7 @@ class Filing { // filing info
     this.stateOfIncorporation = stateOfIncorporationIn;
     this.ein = einIn;
     this.hqAddress = addressIn;
+    this.status = statusIn;
   }
 }
 
@@ -73,7 +89,8 @@ interface ResultsRowProps { // props for the results row
 } 
 
 interface QueueRowProps { // props for the queue row
-  filing: Filing // filing linked in queue row
+  filing: Filing; // filing linked in queue row
+  status: DocumentState; // status of the filing false if in queue, true if extracted
   addToQueue:(filing: Filing)=> void; // add the linked filing to queue
   removeFromQueue:(filing: Filing)=> void; // remove the linked filing from queue
 }
@@ -151,6 +168,18 @@ function QueueRow(props: QueueRowProps) { // row for queue
   const handleRemoveClick = () => { // handle remove click
     props.removeFromQueue(props.filing); // remove from queue
   };
+
+  const areDocumentsDownloading = () => {
+    if (props.status === DocumentState.IN_QUEUE) {
+      return false;
+    } else if (props.status === DocumentState.IN_PROGRESS) {
+      return true;
+    }
+    else {
+      return false;
+    }
+  };
+
   return (  // return the row
     <tr>
       <td>{props.filing.entityName}</td>
@@ -158,7 +187,7 @@ function QueueRow(props: QueueRowProps) { // row for queue
       <td>{props.filing.filingType}</td>
       <td>{props.filing.filingDate}</td>
       <td align="center">
-        <Button variant="danger" onClick={(event) => {handleRemoveClick();}}>X</Button>
+        <Button variant="danger" disabled = {areDocumentsDownloading()} onClick={(event) => {handleRemoveClick();}}>X</Button>
       </td>
     </tr>
   );
@@ -264,14 +293,15 @@ function App() {
 
   const [performNER, setPerformNER] = useState(false); // check box for NER changes this value
 
-  const [smShow, setSmShow] = useState(false); 
+  const [smShow, setSmShow] = useState(false); // shows popup for input file
 
-  const [spinnerHidden, setSpinnerHidden] = useState(true);
+  const [path, setPath] = useState(''); // path for download
 
-  const [path, setPath] = useState('');
+  const [spinnerOn, setSpinnerOn] = useState(true); // spinner for download
 
   const addQueueFilingToMap = (f: Filing) => { // add filing to queue
    let newQueueFilingMap = new Map<string,Filing>(queueFilingMap); // create a new map copying the old queue
+   f.status = DocumentState.IN_QUEUE; // set filing to in queue
    newQueueFilingMap.set(f.documentAddress10k, f); // add filing to map queue
    setQueueFilingMap(newQueueFilingMap);  // update the map queue
   };
@@ -289,7 +319,7 @@ function App() {
     try {
       let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [result.cik, [formType], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
       if(filingResults !== null) { // if filingResults is not null
-        let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false, filingResults!.state_of_incorporation, filingResults!.ein, filingResults!.address.business)); // create filing rows
+        let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false, filingResults!.state_of_incorporation, filingResults!.ein, filingResults!.address.business, DocumentState.SEARCH)); // create filing rows
         setFilingResultList(filingRows); //takes in something that is a Filing[]
       }
       if(filingResultList.length === 0) { // Checking to see if no results were found
@@ -316,22 +346,30 @@ function App() {
   const handleExtractInfoClick = async () => {
     // include perfromNER in the call
     console.log('NER: '+ performNER);
-    // setSpinnerHidden(false);
+
+    setSpinnerOn(false);
     console.log(Array.from(queueFilingMap.values()));
+    for(let filing of queueFilingMap) {
+      filing[1].status = DocumentState.IN_PROGRESS;
+    }
+
     console.log(await window.requestRPC.procedure('process_filing_set', [Array.from(queueFilingMap.values()), await window.desktopPath.getDesktopPath()]));
+
+    // let win: Dialog; // HELP: WHAT GOES HERE!!!!!!
+    // showOpenDialog({ properties: ['openFile', 'multiSelections'] });
+
   };
 
   const handleOutputPath = (e: any) => {
     e.preventDefault();
-    console.log(e.target.value);
-    let path = e.target.files[0].path;
-    let indexOfSlash = path.lastIndexOf('/');
+    let inputPath = e.target.files[0].path;
+    let indexOfSlash = inputPath.lastIndexOf('/');
     if(indexOfSlash === -1) {
-      indexOfSlash = path.lastIndexOf('\\');
+      indexOfSlash = inputPath.lastIndexOf('\\');
     }
-    path = path.substring(0, indexOfSlash + 1);
-    console.log(path);
-    setPath(path);
+    inputPath = inputPath.substring(0, indexOfSlash + 1);
+    console.log(inputPath);
+    setPath(inputPath);
   };
   
   // experimenting https://devrecipes.net/typeahead-with-react-hooks-and-bootstrap/
@@ -370,7 +408,7 @@ function App() {
     try {
       let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [selectedResult.cik, [formType], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
       if(filingResults !== null) { // if filingResults is not null
-        let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false, filingResults!.state_of_incorporation, filingResults!.ein, filingResults!.address.business)); // create filing rows
+        let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false, filingResults!.state_of_incorporation, filingResults!.ein, filingResults!.address.business, DocumentState.SEARCH)); // create filing rows
         setFilingResultList(filingRows); //takes in something that is a Filing[]
       }
     }
@@ -414,7 +452,7 @@ function App() {
               let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [lines[i][0], [type], lines[i][1], lines[i][2]]);
               if(filingResults !== null) {
               console.log(filingResults);
-                let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, type, filing.filingDate, filing.document, false, filingResults!.state_of_incorporation, filingResults!.ein, filingResults!.address.business));
+                let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, type, filing.filingDate, filing.document, false, filingResults!.state_of_incorporation, filingResults!.ein, filingResults!.address.business, DocumentState.SEARCH));
                 console.log(filingRows);
                 //setFilingResultList(filingRows); //takes in something that is a Filing[]
                 // this seems... messy
@@ -461,8 +499,8 @@ function App() {
 
     {/* Search Bar Two */}
     <Container>
-      <Form.Group className="typeahead-form-group mb-3">
-        <Form.Control
+      <FormGroup className="typeahead-form-group mb-3">
+        <FormControl
           placeholder="Entity/CIK"
           id="searchInput"
           type="text"
@@ -475,13 +513,13 @@ function App() {
             results !== undefined &&
             results.length > 0 &&
             results.map((result: Result) => (
-              <ListGroup.Item
+              <ListGroupItem
                 key={result.cik}
                 className="typeahead-list-group-item"
                 onClick={() => onNameSelected(result)}
               >
                 {result.cik + ' | ' + result.name}
-              </ListGroup.Item>
+              </ListGroupItem>
             ))}
           {results !== undefined && !results.length && isLoading && (
             <div className="typeahead-spinner-container">
@@ -489,7 +527,7 @@ function App() {
             </div>
           )}
         </ListGroup>
-      </Form.Group>
+      </FormGroup>
     </Container>
 
     {/* Start and End Dates*/}
@@ -506,14 +544,14 @@ function App() {
         <Col className='input-group'>
           <text>Form Type:&nbsp;&nbsp;&nbsp;</text>
           <Dropdown onSelect={handleFormDropdownClick}>
-            <Dropdown.Toggle variant="secondary" id="form-dropdown">
+            <DropdownToggle variant="secondary" id="form-dropdown">
               {formType}
-            </Dropdown.Toggle>
-            <Dropdown.Menu>
-              <Dropdown.Item eventKey='10-K'>10-K</Dropdown.Item>
-              <Dropdown.Item eventKey='10-Q'>10-Q</Dropdown.Item>
-              <Dropdown.Item eventKey='20-F'>20-F</Dropdown.Item>
-            </Dropdown.Menu>
+            </DropdownToggle>
+            <DropdownMenu>
+              <DropdownItem eventKey='10-K'>10-K</DropdownItem>
+              <DropdownItem eventKey='10-Q'>10-Q</DropdownItem>
+              <DropdownItem eventKey='20-F'>20-F</DropdownItem>
+            </DropdownMenu>
           </Dropdown>
         </Col>
       </Row>
@@ -540,19 +578,19 @@ function App() {
               onHide={() => setSmShow(false)}
               aria-labelledby="example-modal-sizes-title-sm"
             >     
-            <Modal.Header closeButton>
-              <Modal.Title id="example-modal-sizes-title-sm">
+            <ModalHeader closeButton>
+              <ModalTitle id="example-modal-sizes-title-sm">
                 File Upload Setup
-              </Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
+              </ModalTitle>
+            </ModalHeader>
+            <ModalBody>
               [CIK] [START_DATE] [END_DATE]
               <br/>
               [CIK] [START_DATE] [END_DATE]
               <br/>
               <br/>
               * Dates are in ISO format (YYYY-MM-DD)
-            </Modal.Body>         
+            </ModalBody>         
             </Modal>
           </Col>
         </Row>
@@ -625,10 +663,38 @@ function App() {
 
     {/* Queue drawer/canvas */}
     <Offcanvas show={show} onHide={handleClose} placement='end' width='99%'>
-      <Offcanvas.Header closeButton>
-        <Offcanvas.Title>Queue</Offcanvas.Title>
-      </Offcanvas.Header>
-      <Offcanvas.Body>
+      <OffcanvasHeader closeButton>
+        <OffcanvasTitle>Queue</OffcanvasTitle>
+      </OffcanvasHeader>
+      <OffcanvasBody>
+        <Row className="mb-3">
+        <label htmlFor="pathDirectory">Choose Path for Download: </label>
+          <input
+            webkitdirectory=""
+            type="file"
+            id="pathDirectory"
+            disabled={!spinnerOn}
+            onChange={handleOutputPath}
+          />
+          <text>{path}</text>
+
+        </Row>
+        {/* NER Check */}
+        <Row className="mb-3">
+          <Col>
+            <FormCheck id = "NERCheck" disabled = {!spinnerOn} type="checkbox" onChange={handleNERCheck} label="Apply Named Entity Recognition to Queue" />
+          </Col>
+        </Row>
+        {/* Download Button */}
+        <Row className="mb-3">
+          <Col>
+            <Button variant="primary" onClick={handleExtractInfoClick}>Extract & Download</Button>
+          </Col>
+          <Col>
+            <Spinner animation="border" variant="primary" hidden={spinnerOn}/>
+          </Col>
+        </Row>
+        {/* Queue Table */}
         <Row className="mb-3">
         <label htmlFor="pathDirectory">Choose Path for Download: </label>
           <input
@@ -672,7 +738,8 @@ function App() {
               <tbody>
                 {/* TO BE CHANGED */}
                 {Array.from(queueFilingMap.values()).map(((filing) => (
-                  <QueueRow 
+                  <QueueRow
+                  status = {filing.status}
                   key = {filing.documentAddress10k} 
                   filing={filing} 
                   addToQueue={addQueueFilingToMap} 
@@ -683,8 +750,7 @@ function App() {
             </Table>
           </Col>
         </Row>
-        
-      </Offcanvas.Body>
+      </OffcanvasBody>
     </Offcanvas>
     </div>
   );
