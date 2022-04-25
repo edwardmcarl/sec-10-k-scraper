@@ -120,14 +120,6 @@ interface FormData { // data for the form
   filings: Array<FilingData>; // filings
 }
 
-declare module 'react' {
-  interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
-    // extends React's attributes
-    directory?: string;
-    webkitdirectory?: string;
-  }
-}
-
 function ResultsRow(props: ResultsRowProps) { // row for results
   const handleInfoClick = () => { // handle info click
     if (props.isQueued) { // if filing is in queue
@@ -446,7 +438,6 @@ function App() {
   // https://thewebdev.info/2021/11/26/how-to-read-a-text-file-in-react/
   // https://www.youtube.com/watch?v=-AR-6X_98rM&ab_channel=KyleRobinsonYoung
   // TODO change from e: any to e: some other thing
-  // TODO error checking
   const handleFileUpload = async (e: any) => {
     e.preventDefault();
     const reader: FileReader = new FileReader();
@@ -519,7 +510,7 @@ function App() {
       </Row>
     </Container>
 
-    {/* Search Bar Two */}
+    {/* Search Bar */}
     <Container>
       <FormGroup className="typeahead-form-group mb-3">
         <FormControl
@@ -690,10 +681,12 @@ function App() {
       </OffcanvasHeader>
       <OffcanvasBody>
         <Row className="mb-3">
+          {/* Path Button */}
           <Col>
             <Button variant="secondary" disabled = {!spinnerOn} onClick={handleOutputPath}>Choose Path for Download</Button>{' '}
           </Col>
         </Row>
+        {/* Display Path */}
         <Row className="mb-3">
           <text>{path}</text>
         </Row>
