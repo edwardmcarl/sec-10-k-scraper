@@ -206,7 +206,7 @@ class Parser(RateLimited):
         while continue_loop:
             continue_loop = False
             if pos_df["start"].size > 1:
-                for row in pos_df.itertuples():
+                for row in pos_df.itertuples():  # type: ignore
                     if row[0] == 0 and row[2] > pos_df["start"].loc[row[0] + 1]:
                         remove_rows.append(row[1])
                         pos_df = pos_df.drop([row[0]]).reset_index(drop=True)
@@ -235,7 +235,7 @@ class Parser(RateLimited):
         for item in remove_rows:
             max_value_index = None
             max_value = -1
-            for row in df.itertuples():
+            for row in df.itertuples():  # type: ignore
                 if row[1] == item and max_value < row[2]:
                     location_start = None
                     location_end = None

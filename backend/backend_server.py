@@ -3,7 +3,7 @@ import threading
 from pickle import ADDITEMS  # noqa:F401
 
 import gevent  # type: ignore
-import zerorpc
+import zerorpc  # type: ignore
 from zmq import ZMQError  # type: ignore
 
 from api.connection import APIConnection
