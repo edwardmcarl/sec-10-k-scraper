@@ -5,7 +5,7 @@ steps:
    in:
      echoMe: --- Starting Python Build ---
 
- - name: pypyr.steps.cmd
+ - name: pypyr.steps.shell
    in:
     cmd: poetry run pyinstaller --onefile backend_server.py
  

@@ -20,7 +20,7 @@ steps:
     in:
       echoMe: --- Sorting imports ---
  
-  - name: pypyr.steps.cmd
+  - name: pypyr.steps.shell
     in: 
      cmd: poetry run isort .
  
@@ -28,7 +28,7 @@ steps:
     in:
       echoMe: --- Auto-formatting ---
  
-  - name: pypyr.steps.cmd
+  - name: pypyr.steps.shell
     in:
      cmd: poetry run black .
  
@@ -36,7 +36,7 @@ steps:
     in:
       echoMe: --- Linting ---
  
-  - name: pypyr.steps.cmd
+  - name: pypyr.steps.shell
     in:
      cmd: poetry run flake8 .
    
@@ -49,7 +49,7 @@ steps:
     in:
       echoMe: --- Typechecking ---
 
-  - name: pypyr.steps.cmd
+  - name: pypyr.steps.shell
     in:
      cmd: poetry run mypy .
  
@@ -59,19 +59,19 @@ steps:
   - name: pypyr.steps.echo
     in:
       echoMe: backend/api/connection
-  - name: pypyr.steps.cmd
+  - name: pypyr.steps.shell
     in: 
      cmd: poetry run python api/test/connection_test.py
   - name: pypyr.steps.echo
     in:
       echoMe: backend/parser
-  - name: pypyr.steps.cmd
+  - name: pypyr.steps.shell
     in: 
      cmd: poetry run python parser/test/parser_test.py
   - name: pypyr.steps.echo
     in:
       echoMe: backend/misc
-  - name: pypyr.steps.cmd
+  - name: pypyr.steps.shell
     in: 
      cmd: poetry run python misc/test/rate_limiting_test.py
  
