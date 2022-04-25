@@ -6,7 +6,8 @@ from typing import Any, Dict, List  # noqa:F401
 from urllib import request
 
 import gevent  # type: ignore
-import zerorpc  # type: ignore
+import zerorpc
+from zmq import ZMQError  # type: ignore
 
 from api.connection import APIConnection
 from misc.rate_limiting import RateLimitTracker
@@ -68,12 +69,30 @@ def kill_signal_listener(srv: zerorpc.Server):
             srv.stop()
 
 
+def bind_to_unused_port(srv: zerorpc.Server, port: int = 55555):
+    server_bound = False
+    while not server_bound:
+        try:
+            srv.bind(f"tcp://127.0.0.1:{port}")
+            server_bound = True
+        except ZMQError as e:
+            port = port + 1
+            if (
+                port > 65535
+            ):  # if we've exhausted all ports above 55555, something weird is going on
+                raise e
+    return port
+
+
 def main():
     rate_limiter = RateLimitTracker(5)
     api_instance = BackendServer(rate_limiter)
     server = zerorpc.Server(api_instance, heartbeat=3600)
 
-    server.bind(BIND_ADDRESS)
+    # find a port that's not being used
+    selected_port = bind_to_unused_port(server, 55565)
+    # communicate the selected port to the frontend via stdout
+    print(selected_port)
 
     # new thread - listens in on stdin()
     kill_signal_thread = threading.Thread(target=kill_signal_listener, args=[server])

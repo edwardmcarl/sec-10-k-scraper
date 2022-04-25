@@ -1,9 +1,20 @@
 import * as zerorpc from 'zerorpc';
+
 const client = new zerorpc.Client({heartbeatInterval: 3600000});
-client.connect('tcp://localhost:55565');
+
+let connected = false;
+
+export async function connectToBackend(port: string) {
+    client.connect(`tcp://localhost:${port}`);
+    connected = true;
+}
+
  //client.on("error", blah)
 
 export async function remoteCall(funcName:string, args: any[] = []) {
+    if (!connected){
+        throw new Error('Not connected to the backend!');
+    }
     return new Promise((resolve, reject) => {
         client.invoke(funcName, ...args, (error:any, response:any) => {
             if (error) {

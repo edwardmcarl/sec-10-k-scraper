@@ -1,11 +1,10 @@
 import {BrowserWindow, ipcMain, app} from 'electron';
 import {join, normalize} from 'path';
 import {URL} from 'url';
-import {remoteCall} from './remote-procedure';
-import type { ChildProcess} from 'child_process';
+import {connectToBackend,remoteCall} from './remote-procedure';
 import {spawn} from 'child_process';
 import { getPythonExecutableDir, getPythonExecutableName, gracefullyKillChild } from './platform-specific';
-
+import { createInterface } from 'readline';
 async function createWindow() {
   const browserWindow = new BrowserWindow({
     show: false, // Use 'ready-to-show' event to show window
@@ -67,12 +66,23 @@ export async function restoreOrCreateWindow() {
 
 export async function launchPythonBackend() {
 
+  // launch backend process
   const backendProcess = spawn(`./${getPythonExecutableName()}`, {cwd: getPythonExecutableDir()});
-  console.log(backendProcess);
+  
+  // set handlers to kill backend when the frontend closes
   process.on('exit', gracefullyKillChild.bind(null, backendProcess));
   process.on('SIGINT', gracefullyKillChild.bind(null, backendProcess));
   process.on('SIGTERM', gracefullyKillChild.bind(null, backendProcess));
   process.on('SIGUSR1', gracefullyKillChild.bind(null, backendProcess));
   process.on('SIGUSR2', gracefullyKillChild.bind(null, backendProcess));
   process.on('uncaughtException', gracefullyKillChild.bind(null, backendProcess));
+
+  // listen for the child to announce the port it will communicate on
+  const rl = createInterface(backendProcess.stdout);
+  
+  // block until the backend process prints its port
+  let portString:string = await new Promise(resolve=> {
+    rl.question('',resolve);
+  });
+  connectToBackend(portString);
 }
