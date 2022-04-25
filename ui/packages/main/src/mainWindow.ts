@@ -5,6 +5,8 @@ import {remoteCall} from './remote-procedure';
 import type { ChildProcess} from 'child_process';
 import {spawn} from 'child_process';
 import { getPythonExecutableDir, getPythonExecutableName, gracefullyKillChild } from './platform-specific';
+import { dialog } from 'electron';
+
 
 async function createWindow() {
   const browserWindow = new BrowserWindow({
@@ -29,6 +31,9 @@ async function createWindow() {
     }
     ipcMain.handle('rpc', async (event, props) => {
       return remoteCall(props.name, props.args);
+    });
+    ipcMain.handle('selectOutputPath', async (event, props) => {
+      return dialog.showOpenDialogSync({ properties: ['openDirectory', 'createDirectory', 'promptToCreate'] }); // return string[] or undefined, configure for no selection!!!
     });
   });
 

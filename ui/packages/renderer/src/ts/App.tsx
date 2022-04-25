@@ -10,7 +10,6 @@ import {Button, Col, Container, Dropdown, Row, FormControl, FormCheck, FormGroup
 import DatePicker from 'react-date-picker';
 import { string } from 'prop-types';
 import { contextIsolated } from 'process';
-import { BrowserWindow, Dialog } from 'electron';
 
 //Done to make testing possible with react$ in ui/test/specs
 const DropdownToggle = Dropdown.Toggle;
@@ -200,6 +199,19 @@ function EmptySearchAlert(props: AlertData) { // alert for empty search
   return (<text></text>); // return nothing
 }
 
+function EmptySearchAlertQueue(props: AlertData) { // alert for empty search
+  if (props.showAlert) { // if alert should show
+    return ( // return the alert
+      <Alert variant="danger">
+        <p>
+          {props.errorText}
+        </p>
+      </Alert>
+    );
+  }
+  return (<text></text>); // return nothing
+}
+
 // experimenting https://devrecipes.net/typeahead-with-react-hooks-and-bootstrap/
 let dropdownData: (Result | undefined)[]; // data for the dropdown
 const mockResults = (keyword: string) => { // mock results
@@ -264,7 +276,13 @@ function App() {
   // For queue/canvas
   const [show, setShow] = useState(false);
   const handleClose = () => setShow(false);
-  const handleShow = () => setShow(true);
+  const handleShow = () => {
+    if (path !== '' && queueFilingMap.size > 0) {
+      setAllowedToExtract(true);
+    }
+    setAlertMessageQueue(new AlertData('', false));
+    setShow(true);
+  };
 
   // regularly scheduled programming
   let oneYearAgo = new Date();
@@ -283,14 +301,17 @@ function App() {
   const [formType, setFormType] = useState(defaultForm);
 
   const [alertMessage, setAlertMessage] = useState(new AlertData('', false));
+  const [alertMessageQueue, setAlertMessageQueue] = useState(new AlertData('', false));
 
   const [performNER, setPerfromNER] = useState(false); // check box for NER changes this value
 
   const [smShow, setSmShow] = useState(false); // shows popup for input file
 
-  const [path, setPath] = useState(''); // path for download
+  const [path, setPath] = useState(''); // path for download]
 
   const [spinnerOn, setSpinnerOn] = useState(true); // spinner for download
+
+  const [allowedToExtract, setAllowedToExtract] = useState(false); // button for extract
 
   const addQueueFilingToMap = (f: Filing) => { // add filing to queue
    let newQueueFilingMap = new Map<string,Filing>(queueFilingMap); // create a new map copying the old queue
@@ -303,6 +324,9 @@ function App() {
     let newQueueFilingMap = new Map<string,Filing>(queueFilingMap); // create a new map copying the old queue
     newQueueFilingMap.delete(f.documentAddress10k); // remove filing from map queue
     setQueueFilingMap(newQueueFilingMap); // update the map queue
+    if (queueFilingMap.size < 1) {
+      setAllowedToExtract(false);
+    }
   };
 
   const handleSearchClick = async () => { // Triggers when search button is clicked
@@ -333,31 +357,41 @@ function App() {
   };
 
   const handleNERCheck = () => { // Triggers when NER checkbox is clicked
+    if (path !== '' && queueFilingMap.size > 0) {
+      setAllowedToExtract(true);
+    }
     setPerfromNER(!performNER); // set performNER to the opposite of what it was
   };
 
   const handleExtractInfoClick = () => {
     // include perfromNER in the call
-    console.log('NER: '+ performNER);
-    setSpinnerOn(false);
-    for(let filing of queueFilingMap) {
-      filing[1].status = DocumentState.IN_PROGRESS;
+    if(queueFilingMap.size < 1) {
+      let errorMessage: AlertData = new AlertData('No filings in queue', true); // create error message for empty search
+      setAlertMessageQueue(errorMessage); // set alert message
+    }
+    else {
+      for(let filing of queueFilingMap) {
+        filing[1].status = DocumentState.IN_PROGRESS;
+      }
+      setSpinnerOn(false);
     }
 
-    // let win: Dialog; // HELP: WHAT GOES HERE!!!!!!
-    // showOpenDialog({ properties: ['openFile', 'multiSelections'] });
   };
 
-  const handleOutputPath = (e: any) => {
-    e.preventDefault();
-    let inputPath = e.target.files[0].path;
-    let indexOfSlash = inputPath.lastIndexOf('/');
-    if(indexOfSlash === -1) {
-      indexOfSlash = inputPath.lastIndexOf('\\');
+  const handleOutputPath = async () => {
+    let pathInput:string[] | undefined = await window.pathSelector.pathSelectorWindow();
+    if(pathInput !== undefined) {
+      let inputPath = pathInput[0];
+      console.log(inputPath);
+      setPath(inputPath);
+      if (queueFilingMap.size > 0) {
+        setAllowedToExtract(true);
+      }
     }
-    inputPath = inputPath.substring(0, indexOfSlash + 1);
-    console.log(inputPath);
-    setPath(inputPath);
+    else {
+      let errorMessage: AlertData = new AlertData('No path selected', true); // create error message for empty search
+      setAlertMessageQueue(errorMessage); // set alert message
+    }
   };
   
   // experimenting https://devrecipes.net/typeahead-with-react-hooks-and-bootstrap/
@@ -656,16 +690,17 @@ function App() {
       </OffcanvasHeader>
       <OffcanvasBody>
         <Row className="mb-3">
-        <label htmlFor="pathDirectory">Choose Path for Download: </label>
-          <input
-            webkitdirectory=""
-            type="file"
-            id="pathDirectory"
-            disabled={!spinnerOn}
-            onChange={handleOutputPath}
-          />
+          <Col>
+            <Button variant="secondary" disabled = {!spinnerOn} onClick={handleOutputPath}>Choose Path for Download</Button>{' '}
+          </Col>
+        </Row>
+        <Row className="mb-3">
           <text>{path}</text>
-
+        </Row>
+        <Row className="mb-3">
+          <Col>
+            <EmptySearchAlertQueue errorText={alertMessageQueue.errorText} showAlert={alertMessageQueue.showAlert} ></EmptySearchAlertQueue>
+          </Col>
         </Row>
         {/* NER Check */}
         <Row className="mb-3">
@@ -676,7 +711,7 @@ function App() {
         {/* Download Button */}
         <Row className="mb-3">
           <Col>
-            <Button variant="primary" onClick={handleExtractInfoClick}>Extract & Download</Button>
+            <Button variant="primary" disabled = {!allowedToExtract} onClick={handleExtractInfoClick}>Extract & Download</Button>
           </Col>
           <Col>
             <Spinner animation="border" variant="primary" hidden={spinnerOn}/>
