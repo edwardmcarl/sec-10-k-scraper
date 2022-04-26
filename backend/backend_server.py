@@ -1,7 +1,6 @@
 import signal
 import threading
 from enum import Enum
-from parser.parser import Parser
 from pathlib import Path
 from traceback import format_exception
 from typing import Any, Dict, List  # noqa:F401
@@ -12,6 +11,7 @@ from zmq import ZMQError  # type: ignore
 
 from api.connection import APIConnection
 from misc.rate_limiting import RateLimitTracker
+from parse.parse import Parse
 from writer.write_to_excel import DataWriter
 
 
@@ -22,7 +22,7 @@ class JobState(str, Enum):
     ERROR = "Error"
 
 
-class BackendServer(APIConnection, DataWriter, Parser):
+class BackendServer(APIConnection, DataWriter, Parse):
     def __init__(self, limit_counter: RateLimitTracker) -> None:
         super().__init__(limit_counter)
         self.processing_state = JobState.NO_WORK
