@@ -93,6 +93,7 @@ interface QueueRowProps { // props for the queue row
   status: DocumentState; // status of the filing false if in queue, true if extracted
   addToQueue:(filing: Filing)=> void; // add the linked filing to queue
   removeFromQueue:(filing: Filing)=> void; // remove the linked filing from queue
+  disabled: boolean;
 }
 
 interface AddressData { // data for the address
@@ -169,17 +170,6 @@ function QueueRow(props: QueueRowProps) { // row for queue
     props.removeFromQueue(props.filing); // remove from queue
   };
 
-  const areDocumentsDownloading = () => {
-    if (props.status === DocumentState.IN_QUEUE) {
-      return false;
-    } else if (props.status === DocumentState.IN_PROGRESS) {
-      return true;
-    }
-    else {
-      return false;
-    }
-  };
-
   return (  // return the row
     <tr>
       <td>{props.filing.entityName}</td>
@@ -187,7 +177,7 @@ function QueueRow(props: QueueRowProps) { // row for queue
       <td>{props.filing.filingType}</td>
       <td>{props.filing.filingDate}</td>
       <td align="center">
-        <Button variant="danger" disabled = {areDocumentsDownloading()} onClick={(event) => {handleRemoveClick();}}>X</Button>
+        <Button variant="danger" disabled = {props.disabled} onClick={(event) => {handleRemoveClick();}}>X</Button>
       </td>
     </tr>
   );
@@ -354,7 +344,7 @@ function App() {
       filing[1].status = DocumentState.IN_PROGRESS;
     }
 
-    console.log(await window.requestRPC.procedure('process_filing_set', [Array.from(queueFilingMap.values()), await window.desktopPath.getDesktopPath()]));
+    console.log(await window.requestRPC.procedure('process_filing_set', [Array.from(queueFilingMap.values()), await window.desktopPath.getDesktopPath(), performNER]));
 
     // let win: Dialog; // HELP: WHAT GOES HERE!!!!!!
     // showOpenDialog({ properties: ['openFile', 'multiSelections'] });
@@ -743,6 +733,7 @@ function App() {
                   filing={filing} 
                   addToQueue={addQueueFilingToMap} 
                   removeFromQueue={removeQueueFilingFromMap}
+                  disabled={spinnerOn}
                   ></QueueRow>
                 )))}
               </tbody>

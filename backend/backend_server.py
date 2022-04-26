@@ -43,19 +43,25 @@ class BackendServer(APIConnection, DataWriter, Parser):
         return {"state": self.processing_state, "error": self.processing_error}
 
     def process_filing_set(
-        self, filing_list: List[Dict[str, Any]], output_folder_path: str
+        self,
+        filing_list: List[Dict[str, Any]],
+        output_folder_path: str,
+        perform_ner: bool = True,
     ):
         # set state to indicate we're working
         if self.processing_state == JobState.WORKING:
             return False
         self.processing_state = JobState.WORKING
-        gevent.spawn(self._process_filings, filing_list, output_folder_path)
+        gevent.spawn(
+            self._process_filings, filing_list, output_folder_path, perform_ner
+        )
         return True
 
     def _process_filings(
         self,
         filing_list: List[Dict[str, Any]],
         output_folder_path: str = "./output",
+        perform_ner: bool = True,
     ):
         try:
             # create the path / output folder if it doesn't exist
@@ -74,15 +80,24 @@ class BackendServer(APIConnection, DataWriter, Parser):
             ]
             gevent.joinall(download_tasks)
 
+            # Only 10-Ks should be parsed and added to the spreadsheet
+            filing_list_10k = [
+                filing
+                for filing in filing_list
+                if filing["filingType"].lower() == "10-K".lower()
+            ]
+
             # parse html iteratively, to maximize number of event loop yields with gevent
             parse_task_results = [
                 self.parse_document(filing["documentAddress10k"])
-                for filing in filing_list
+                for filing in filing_list_10k
             ]
 
             # apply NER iteratively, to maximize number of event loop yields with gevent
             ner_task_results = [
                 self._apply_named_entity_recognition(parsed_doc)
+                if perform_ner
+                else {}  # if we don't run NER, behave as if no entities were recognized
                 for parsed_doc in parse_task_results
             ]
 
@@ -90,10 +105,11 @@ class BackendServer(APIConnection, DataWriter, Parser):
             for i in range(0, len(parse_task_results)):
                 spreadsheet_contents = self.add_dataframe_row(
                     spreadsheet_contents,
-                    filing_list[i],
+                    filing_list_10k[i],
                     parse_task_results[i],
                     ner_task_results[i],
                 )
+
             # use openpyxl to rewrite to excel; needs tinkering
             spreadsheet_contents.to_excel(
                 Path(output_folder_path, "summary.xlsx"), index=False

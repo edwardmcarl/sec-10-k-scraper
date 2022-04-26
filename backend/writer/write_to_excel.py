@@ -185,9 +185,9 @@ class DataWriter:
         for key in all_row_data.keys():
             all_row_data_formatted[key] = []
             all_row_data_formatted[key].append(all_row_data[key])
-        for ele in all_row_data.keys():
-            print(ele)
-            print(len(all_row_data_formatted[ele]))
+        # for ele in all_row_data.keys():
+        #    print(ele)
+        #    print(len(all_row_data_formatted[ele]))
         # print(all_row_data) #todo remove debug
         new_row = pd.DataFrame(all_row_data_formatted)
         return pd.concat(
