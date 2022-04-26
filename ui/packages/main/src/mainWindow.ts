@@ -5,6 +5,8 @@ import {connectToBackend,remoteCall} from './remote-procedure';
 import {spawn} from 'child_process';
 import { getPythonExecutableDir, getPythonExecutableName, gracefullyKillChild } from './platform-specific';
 import { createInterface } from 'readline';
+import { dialog } from 'electron';
+
 async function createWindow() {
   const browserWindow = new BrowserWindow({
     show: false, // Use 'ready-to-show' event to show window
@@ -29,7 +31,10 @@ async function createWindow() {
     ipcMain.handle('rpc', async (event, props) => {
       return remoteCall(props.name, props.args);
     });
-    ipcMain.handle('getPath', ()=>app.getPath('desktop'));
+    ipcMain.handle('getPath', ()=>app.getPath('desktop')); // todo make names more descriptive
+    ipcMain.handle('selectOutputPath', async (event, props) => {
+      return dialog.showOpenDialogSync({ properties: ['openDirectory', 'createDirectory', 'promptToCreate'] }); // return string[] or undefined, configure for no selection!!!
+    });
   });
 
   /**
