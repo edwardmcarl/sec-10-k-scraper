@@ -265,6 +265,8 @@ function App() {
   // For queue/canvas
   const [show, setShow] = useState(false);
   const handleClose = () => setShow(false);
+  const [allowedToExtract, setAllowedToExtract] = useState(false); // button for extract
+
   const handleShow = () => {
     if (path !== '' && queueFilingMap.size > 0) {
       setAllowedToExtract(true);
@@ -297,10 +299,13 @@ function App() {
   const [smShow, setSmShow] = useState(false); // shows popup for input file
 
   const [path, setPath] = useState(''); // path for download] # await window.desktopPath.getDesktopPath()
-
+  useEffect(()=> {
+    const setPathToDesktop = async () => {
+      setPath(await window.desktopPath.getDesktopPath());
+    };
+    setPathToDesktop().catch(console.log);
+  }, []); // empty list as second argument means that it only triggers once, on component mount. Acts like a 'default'
   const [spinnerOn, setSpinnerOn] = useState(true); // spinner for download
-
-  const [allowedToExtract, setAllowedToExtract] = useState(false); // button for extract
 
   const addQueueFilingToMap = (f: Filing) => { // add filing to queue
    let newQueueFilingMap = new Map<string,Filing>(queueFilingMap); // create a new map copying the old queue
