@@ -1,6 +1,6 @@
 import * as zerorpc from 'zerorpc';
 
-const client = new zerorpc.Client({heartbeatInterval: 3600000});
+const client = new zerorpc.Client({heartbeatInterval:15000, heartbeatTimeout: 60000});
 
 let connected = false;
 

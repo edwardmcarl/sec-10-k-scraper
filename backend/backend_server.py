@@ -1,12 +1,13 @@
 import signal
 import threading
+from enum import Enum
 from parser.parser import Parser
 from pathlib import Path
+from traceback import format_exception
 from typing import Any, Dict, List  # noqa:F401
-from urllib import request
 
 import gevent  # type: ignore
-import zerorpc
+import zerorpc  # type: ignore
 from zmq import ZMQError  # type: ignore
 
 from api.connection import APIConnection
@@ -14,49 +15,93 @@ from misc.rate_limiting import RateLimitTracker
 from writer.write_to_excel import DataWriter
 
 
+class JobState(str, Enum):
+    NO_WORK = "No Work"
+    WORKING = "Working"
+    COMPLETE = "Complete"
+    ERROR = "Error"
+
+
 class BackendServer(APIConnection, DataWriter, Parser):
+    def __init__(self, limit_counter: RateLimitTracker) -> None:
+        super().__init__(limit_counter)
+        self.processing_state = JobState.NO_WORK
+        self.processing_error = None
+
+    def _set_job_state(self, state: JobState, err=None):
+        self.processing_state = state
+        self.processing_error = err
+
+    def _rate_limited_html_download(self, url: str, dest_folder: Path, filename: str):
+        dest_folder.mkdir(parents=True, exist_ok=True)
+        dest_path = Path(dest_folder, filename)
+        data = self._get_html_data(url)
+        with open(dest_path.resolve(), mode="w") as file:
+            file.write(data)
+
+    def get_job_state(self):
+        return {"state": self.processing_state, "error": self.processing_error}
+
     def process_filing_set(
+        self, filing_list: List[Dict[str, Any]], output_folder_path: str
+    ):
+        # set state to indicate we're working
+        if self.processing_state == JobState.WORKING:
+            return False
+        self.processing_state = JobState.WORKING
+        gevent.spawn(self._process_filings, filing_list, output_folder_path)
+        return True
+
+    def _process_filings(
         self,
         filing_list: List[Dict[str, Any]],
         output_folder_path: str = "./output",
     ):
-        # create the path / output folder if it doesn't exist
-        Path(output_folder_path).mkdir(parents=True, exist_ok=True)
         try:
-            for filing in filing_list:
-                request.urlretrieve(
-                    filing["documentAddress10k"],
-                    Path(
-                        output_folder_path,
-                        filing["entityName"],
-                        f"{filing['filingType']}_{filing['filingDate']}.htm",
-                    ),
-                )
-        except Exception:
-            print("Issue saving HTML")
-        spreadsheet_contents = self._load_main_spreadsheet(output_folder_path)
-        parse_tasks = [
-            gevent.spawn(self.parse_document, filing["documentAddress10k"])
-            for filing in filing_list
-        ]
-        gevent.joinall(parse_tasks)
-        parse_task_results = [task.value for task in parse_tasks]
-        ner_tasks = [
-            gevent.spawn(self._apply_named_entity_recognition, parsed_doc)
-            for parsed_doc in parse_task_results
-        ]
-        gevent.joinall(ner_tasks)
-        ner_task_results = [task.value for task in ner_tasks]
+            # create the path / output folder if it doesn't exist
+            Path(output_folder_path).mkdir(parents=True, exist_ok=True)
+            spreadsheet_contents = self._load_main_spreadsheet(output_folder_path)
 
-        for i in range(0, len(parse_task_results)):
-            spreadsheet_contents = self.add_dataframe_row(
-                spreadsheet_contents,
-                filing_list[i],
-                parse_task_results[i],
-                ner_task_results[i],
+            # download html files
+            download_tasks = [
+                gevent.spawn(
+                    self._rate_limited_html_download,
+                    filing["documentAddress10k"],
+                    Path(output_folder_path, filing["entityName"]),
+                    f"{filing['filingType']}_{filing['filingDate']}.htm",
+                )
+                for filing in filing_list
+            ]
+            gevent.joinall(download_tasks)
+
+            # parse html iteratively, to maximize number of event loop yields with gevent
+            parse_task_results = [
+                self.parse_document(filing["documentAddress10k"])
+                for filing in filing_list
+            ]
+
+            # apply NER iteratively, to maximize number of event loop yields with gevent
+            ner_task_results = [
+                self._apply_named_entity_recognition(parsed_doc)
+                for parsed_doc in parse_task_results
+            ]
+
+            # iteratively expand spreadsheet
+            for i in range(0, len(parse_task_results)):
+                spreadsheet_contents = self.add_dataframe_row(
+                    spreadsheet_contents,
+                    filing_list[i],
+                    parse_task_results[i],
+                    ner_task_results[i],
+                )
+            # use openpyxl to rewrite to excel; needs tinkering
+            spreadsheet_contents.to_excel(
+                Path(output_folder_path, "summary.xlsx"), index=False
             )
-        # use openpyxl to rewrite to excel; needs tinkering
-        spreadsheet_contents.to_excel(Path(output_folder_path, "summary.xlsx"))
+            self._set_job_state(JobState.COMPLETE)
+        except Exception as err:
+            error_report = "\n".join(format_exception(err))  # type: ignore
+            self._set_job_state(JobState.ERROR, error_report)
 
 
 BIND_ADDRESS = "tcp://127.0.0.1:55565"
@@ -84,13 +129,23 @@ def bind_to_unused_port(srv: zerorpc.Server, port: int = 55555):
     return port
 
 
+def foo():
+    rate_limiter = RateLimitTracker(5)
+    api_instance = BackendServer(rate_limiter)
+    api_instance._rate_limited_html_download(
+        "https://www.sec.gov/Archives/edgar/data/0000037996/000003799621000012/f-20201231.htm",
+        Path("/home", "edcarl", "Desktop"),
+        "EXXON_421-2934.html",
+    )
+
+
 def main():
     rate_limiter = RateLimitTracker(5)
     api_instance = BackendServer(rate_limiter)
-    server = zerorpc.Server(api_instance, heartbeat=3600)
+    server = zerorpc.Server(api_instance, heartbeat=15)
 
     # find a port that's not being used
-    selected_port = bind_to_unused_port(server, 55565)
+    selected_port = bind_to_unused_port(server, 55555)
     # communicate the selected port to the frontend via stdout
     print(selected_port)
 
@@ -107,25 +162,4 @@ def main():
 
 
 if __name__ == "__main__":
-    # input = [    {
-    #    "entityName": "FORD MOTOR CO",
-    #    "cikNumber": "CIK0000037996",
-    #    "filingType": "10-K",
-    #    "filingDate": "2022-02-04",
-    #    "documentAddress10k": "https://sec.gov/Archives/edgar/data/37996/000003799622000013/f-20211231.htm",
-    #    "extractInfo": False,
-    #    "stateOfIncorporation": "DE",
-    #    "ein": "380549190",
-    #    "hqAddress": {
-    #        "street1": "ONE AMERICAN ROAD",
-    #        "street2": None,
-    #        "city": "DEARBORN",
-    #        "stateOrCountry": "MI",
-    #        "zipCode": "48126",
-    #        "stateOrCountryDescription": "MI"
-    #    }
-    # }]
-    # rate_limiter = RateLimitTracker(5)
-    # api_instance = BackendServer(rate_limiter)
-    # api_instance.process_filing_set(input)
     main()

@@ -299,6 +299,7 @@ function App() {
 
   const [spinnerOn, setSpinnerOn] = useState(true); // spinner for download
 
+
   const addQueueFilingToMap = (f: Filing) => { // add filing to queue
    let newQueueFilingMap = new Map<string,Filing>(queueFilingMap); // create a new map copying the old queue
    f.status = DocumentState.IN_QUEUE; // set filing to in queue
@@ -347,7 +348,7 @@ function App() {
     // include perfromNER in the call
     console.log('NER: '+ performNER);
 
-    setSpinnerOn(false);
+    setSpinnerOn(true);
     console.log(Array.from(queueFilingMap.values()));
     for(let filing of queueFilingMap) {
       filing[1].status = DocumentState.IN_PROGRESS;
@@ -359,6 +360,32 @@ function App() {
     // showOpenDialog({ properties: ['openFile', 'multiSelections'] });
 
   };
+
+  interface BackendState{
+    'state': JobState,
+    'error' : any
+  }
+  enum JobState {
+    NO_WORK = 'No Work',
+    WORKING = 'Working',
+    COMPLETE = 'Complete',
+    ERROR = 'Error'
+  }
+  const pollJobState = async () => {
+    let time = Date.now();
+    console.log('Poll at ' + time);
+    let backendState: BackendState = await window.requestRPC.procedure('get_job_state');
+    console.log('Response to ' + time + ': ');
+    console.log(backendState);
+    setSpinnerOn(backendState.state === JobState.WORKING);
+  };
+  // periodically poll the state of the backend
+  useEffect(()=> {
+    const timer = setInterval(()=>{
+      pollJobState();
+    }, 1000); //poll every second
+    return ()=> clearInterval(timer);
+  });
 
   const handleOutputPath = (e: any) => {
     e.preventDefault();
@@ -673,7 +700,7 @@ function App() {
             webkitdirectory=""
             type="file"
             id="pathDirectory"
-            disabled={!spinnerOn}
+            disabled={spinnerOn}
             onChange={handleOutputPath}
           />
           <text>{path}</text>
@@ -682,7 +709,7 @@ function App() {
         {/* NER Check */}
         <Row className="mb-3">
           <Col>
-            <FormCheck id = "NERCheck" disabled = {!spinnerOn} type="checkbox" onChange={handleNERCheck} label="Apply Named Entity Recognition to Queue" />
+            <FormCheck id = "NERCheck" disabled = {spinnerOn} type="checkbox" onChange={handleNERCheck} label="Apply Named Entity Recognition to Queue" />
           </Col>
         </Row>
         {/* Download Button */}
@@ -691,7 +718,7 @@ function App() {
             <Button variant="primary" onClick={handleExtractInfoClick}>Extract & Download</Button>
           </Col>
           <Col>
-            <Spinner animation="border" variant="primary" hidden={spinnerOn}/>
+            <Spinner animation="border" variant="primary" hidden={!spinnerOn}/>
           </Col>
         </Row>
         {/* Queue Table */}

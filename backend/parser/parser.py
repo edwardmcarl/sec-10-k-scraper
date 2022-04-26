@@ -1,5 +1,6 @@
 # Reason for escaping mypy type check: https://bugs.launchpad.net/beautifulsoup/+bug/1843791
 # Can create a 'stublist' but wanted to get this commit first
+import cProfile
 import gzip
 import os
 import re
@@ -8,6 +9,7 @@ from typing import Any, Dict, List, Set
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+import gevent  # type: ignore
 import pandas as pd  # type: ignore
 import spacy  # type: ignore # The smallest spacy model has virtually equivalent NER performance to the largest models, while running much faster
 from bs4 import BeautifulSoup  # type: ignore
@@ -117,11 +119,7 @@ class Parser(RateLimited):
         """
         super().__init__(limit_counter)
 
-    def parse_document(self, document_url: str) -> Dict[str, Dict[str, str]]:
-
-        # This logic is influenced by this GitHub gist: https://gist.github.com/anshoomehra/ead8925ea291e233a5aa2dcaa2dc61b2
-        parser = "lxml"
-
+    def _get_html_data(self, document_url: str):
         if not (document_url.endswith(".htm") or document_url.endswith(".html")):
             raise ParserError(ParserError.DOCUMENT_NOT_SUPPORTED, document_url)
 
@@ -158,6 +156,14 @@ class Parser(RateLimited):
         except URLError as f:
             raise ParserError(ParserError.CONNECTION_ERROR, originalError=f)
 
+        return data
+
+    def parse_document(self, document_url: str) -> Dict[str, Dict[str, str]]:
+
+        # This logic is influenced by this GitHub gist: https://gist.github.com/anshoomehra/ead8925ea291e233a5aa2dcaa2dc61b2
+        parser = "lxml"
+
+        data = self._get_html_data(document_url)
         raw_10k = data
         regex = re.compile(Parser.COMPLETE_REGEX)
 
@@ -219,6 +225,7 @@ class Parser(RateLimited):
         remove_rows = []
         continue_loop = True
         while continue_loop:
+            gevent.sleep(0)  # yield execution to e.g. allow heartbeat signals
             continue_loop = False
             if pos_df["start"].size > 1:
                 for row in pos_df.itertuples():  # type: ignore
@@ -248,6 +255,7 @@ class Parser(RateLimited):
         pos_df.set_index("item", inplace=True)
         df_list = []
         for item in remove_rows:
+            gevent.sleep(0)  # yield execution
             max_value_index = None
             max_value = -1
             for row in df.itertuples():  # type: ignore
@@ -300,6 +308,7 @@ class Parser(RateLimited):
         document_map = {}
         index_length = len(pos_df.index)
         for index, item in enumerate(pos_df.index):
+            gevent.sleep(0)  # yield execution
             if item in Parser.EXTRACTED_FIELDS:
                 if index < index_length - 1:
                     text = raw_10k[
@@ -310,9 +319,14 @@ class Parser(RateLimited):
                 else:
                     text = raw_10k[pos_df["start"].loc[item] :]
                 soup = BeautifulSoup(text, parser)
+                gevent.sleep(0)  # yield execution
+                soup_html = soup.prettify()
+                gevent.sleep(0)
+                soup_text = soup.get_text("\n")
+                gevent.sleep()
                 document_map[item] = {
-                    "html": soup.prettify(),
-                    "text": soup.get_text("\n"),
+                    "html": soup_html,
+                    "text": soup_text,
                 }
 
         return document_map
@@ -368,9 +382,12 @@ class Parser(RateLimited):
         ) -> Set[str]:
 
             processed_doc = nlp(string)
-
+            count = 0  # yield the event loop every 100 tokens processed
             # Compile all the tokens matching the labels into a single set
             tokens_matching_labels = set()
+            count = (count + 1) % 100
+            if count == 0:
+                gevent.sleep(0)
             for entity in processed_doc.ents:
                 if entity.label_ in labels_to_gather:
                     tokens_matching_labels.add(entity.text)
@@ -384,3 +401,14 @@ class Parser(RateLimited):
             for section in doc_map.keys()
         }
         return section_texts
+
+
+def profile_this():
+    docurl = "https://www.sec.gov/Archives/edgar/data/0000037996/000003799621000012/f-20201231.htm"
+    c = RateLimitTracker(5)
+    x = Parser(c)
+    x.parse_document(docurl)
+
+
+if __name__ == "__main__":
+    cProfile.run("profile_this()", "profiling.txt")
