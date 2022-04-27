@@ -168,7 +168,7 @@ function QueueRow(props: QueueRowProps) { // row for queue
       <td>{props.filing.filingType}</td>
       <td>{props.filing.filingDate}</td>
       <td align="center">
-        <Button variant="danger" disabled = {props.disabled} onClick={(event) => {handleRemoveClick();}}>X</Button>
+        <Button variant="danger" disabled = {props.disabled} onClick={(event) => {handleRemoveClick();}}>Remove From Queue</Button>
       </td>
     </tr>
   );
@@ -544,6 +544,13 @@ function App() {
 
     {/* Search Bar */}
     <Container>
+      <style>
+      {`
+        .typeahead-form-group {
+          position: relative;
+        }
+      `}
+      </style>
       <FormGroup className="typeahead-form-group mb-3">
         <FormControl
           placeholder="Entity/CIK"
@@ -553,6 +560,15 @@ function App() {
           onChange={handleInputChange}
           value={name}
         />
+        <style>
+        {`
+          .typeahead-list-group {
+            position: absolute;
+            width: 100%;
+            z-index: 1000;
+          }
+        `}
+        </style>
         <ListGroup className="typeahead-list-group">
           {!isNameSelected &&
             results !== undefined &&
@@ -707,6 +723,13 @@ function App() {
     </Container>
 
     {/* Queue drawer/canvas */}
+    <style>
+      {`
+        .offcanvas-end {
+          width: 700px;
+        }
+      `}
+    </style>
     <Offcanvas show={show} onHide={handleClose} placement='end' width='99%'>
       <OffcanvasHeader closeButton>
         <OffcanvasTitle>Queue</OffcanvasTitle>
