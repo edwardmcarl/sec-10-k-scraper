@@ -238,7 +238,7 @@ async function updateSearchInput(input: string) {
   }
   // call search function in API library created by Sena
   return new Promise((res, rej) => {
-      if (err === null){
+      if (err){
         rej(err);
       }else{
         res(entityClassList);
