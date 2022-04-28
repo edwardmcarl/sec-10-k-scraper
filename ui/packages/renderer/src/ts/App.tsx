@@ -52,14 +52,21 @@ class Filing { // filing info
   filingDate: string; // filing date
   documentAddress10k: string; // document address for 10-K
   extractInfo: boolean; // true/false if user wants to extract info from 10-K
+  stateOfIncorporation: string; // state of incorporation
+  ein: string; // ein
+  hqAddress: AddressData;
   status: DocumentState;
-  constructor(entityNameIn: string, cikNumberIn: string, filingTypeIn: string, filingDateIn: string, documentAddress10kIn: string, extractInfoIn: boolean, statusIn: DocumentState) {
+
+  constructor(entityNameIn: string, cikNumberIn: string, filingTypeIn: string, filingDateIn: string, documentAddress10kIn: string, extractInfoIn: boolean, stateOfIncorporationIn: string, einIn: string, addressIn: AddressData, statusIn: DocumentState) {
     this.entityName = entityNameIn;
     this.cikNumber = cikNumberIn;
     this.filingType = filingTypeIn;
     this.filingDate = filingDateIn;
     this.documentAddress10k = documentAddress10kIn;
     this.extractInfo = extractInfoIn;
+    this.stateOfIncorporation = stateOfIncorporationIn;
+    this.ein = einIn;
+    this.hqAddress = addressIn;
     this.status = statusIn;
   }
 }
@@ -85,6 +92,7 @@ interface QueueRowProps { // props for the queue row
   status: DocumentState; // status of the filing false if in queue, true if extracted
   addToQueue:(filing: Filing)=> void; // add the linked filing to queue
   removeFromQueue:(filing: Filing)=> void; // remove the linked filing from queue
+  disabled: boolean;
 }
 
 interface AddressData { // data for the address
@@ -153,17 +161,6 @@ function QueueRow(props: QueueRowProps) { // row for queue
     props.removeFromQueue(props.filing); // remove from queue
   };
 
-  const areDocumentsDownloading = () => {
-    if (props.status === DocumentState.IN_QUEUE) {
-      return false;
-    } else if (props.status === DocumentState.IN_PROGRESS) {
-      return true;
-    }
-    else {
-      return false;
-    }
-  };
-
   return (  // return the row
     <tr>
       <td>{props.filing.entityName}</td>
@@ -171,7 +168,7 @@ function QueueRow(props: QueueRowProps) { // row for queue
       <td>{props.filing.filingType}</td>
       <td>{props.filing.filingDate}</td>
       <td align="center">
-        <Button variant="danger" disabled = {areDocumentsDownloading()} onClick={(event) => {handleRemoveClick();}}>X</Button>
+        <Button variant="danger" disabled = {props.disabled} onClick={(event) => {handleRemoveClick();}}>X</Button>
       </td>
     </tr>
   );
@@ -268,6 +265,8 @@ function App() {
   // For queue/canvas
   const [show, setShow] = useState(false);
   const handleClose = () => setShow(false);
+  const [allowedToExtract, setAllowedToExtract] = useState(false); // button for extract
+
   const handleShow = () => {
     if (path !== '' && queueFilingMap.size > 0) {
       setAllowedToExtract(true);
@@ -295,15 +294,18 @@ function App() {
   const [alertMessage, setAlertMessage] = useState(new AlertData('', false));
   const [alertMessageQueue, setAlertMessageQueue] = useState(new AlertData('', false));
 
-  const [performNER, setPerfromNER] = useState(false); // check box for NER changes this value
+  const [performNER, setPerformNER] = useState(false); // check box for NER changes this value
 
   const [smShow, setSmShow] = useState(false); // shows popup for input file
 
-  const [path, setPath] = useState(''); // path for download]
-
+  const [path, setPath] = useState(''); // path for download] # await window.desktopPath.getDesktopPath()
+  useEffect(()=> {
+    const setPathToDesktop = async () => {
+      setPath(await window.desktopPath.getDesktopPath());
+    };
+    setPathToDesktop().catch(console.log);
+  }, []); // empty list as second argument means that it only triggers once, on component mount. Acts like a 'default'
   const [spinnerOn, setSpinnerOn] = useState(true); // spinner for download
-
-  const [allowedToExtract, setAllowedToExtract] = useState(false); // button for extract
 
   const addQueueFilingToMap = (f: Filing) => { // add filing to queue
    let newQueueFilingMap = new Map<string,Filing>(queueFilingMap); // create a new map copying the old queue
@@ -328,7 +330,7 @@ function App() {
     try {
       let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [result.cik, [formType], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
       if(filingResults !== null) { // if filingResults is not null
-        let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false, DocumentState.SEARCH)); // create filing rows
+        let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false, filingResults!.state_of_incorporation, filingResults!.ein, filingResults!.address.business, DocumentState.SEARCH)); // create filing rows
         setFilingResultList(filingRows); //takes in something that is a Filing[]
       }
       if(filingResultList.length === 0) { // Checking to see if no results were found
@@ -352,23 +354,53 @@ function App() {
     if (path !== '' && queueFilingMap.size > 0) {
       setAllowedToExtract(true);
     }
-    setPerfromNER(!performNER); // set performNER to the opposite of what it was
+    setPerformNER(!performNER); // set performNER to the opposite of what it was
   };
 
-  const handleExtractInfoClick = () => {
+  const handleExtractInfoClick = async () => {
     // include perfromNER in the call
+
+    setSpinnerOn(true);
+    console.log(Array.from(queueFilingMap.values()));
+
     if(queueFilingMap.size < 1) {
       let errorMessage: AlertData = new AlertData('No filings in queue', true); // create error message for empty search
       setAlertMessageQueue(errorMessage); // set alert message
-    }
-    else {
+    } else {
       for(let filing of queueFilingMap) {
         filing[1].status = DocumentState.IN_PROGRESS;
       }
-      setSpinnerOn(false);
     }
+    await window.requestRPC.procedure('process_filing_set', [Array.from(queueFilingMap.values()), path, performNER]);
 
   };
+
+  interface BackendState{
+    'state': JobState,
+    'error' : any
+  }
+  enum JobState {
+    NO_WORK = 'No Work',
+    WORKING = 'Working',
+    COMPLETE = 'Complete',
+    ERROR = 'Error'
+  }
+  const pollJobState = async () => {
+    let time = Date.now();
+    console.log('Poll at ' + time);
+    let backendState: BackendState = await window.requestRPC.procedure('get_job_state');
+    console.log('Response to ' + time + ': ');
+    console.log(backendState);
+    setSpinnerOn(backendState.state === JobState.WORKING);
+  };
+
+  // periodically poll the state of the backend
+  useEffect(()=> {
+    const timer = setInterval(()=>{
+      pollJobState();
+    }, 1000); //poll every second
+    return ()=> clearInterval(timer);
+  });
 
   const handleOutputPath = async () => {
     let pathInput:string[] | undefined = await window.pathSelector.pathSelectorWindow();
@@ -422,7 +454,7 @@ function App() {
     try {
       let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [selectedResult.cik, [formType], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
       if(filingResults !== null) { // if filingResults is not null
-        let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false, DocumentState.SEARCH)); // create filing rows
+        let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false, filingResults!.state_of_incorporation, filingResults!.ein, filingResults!.address.business, DocumentState.SEARCH)); // create filing rows
         setFilingResultList(filingRows); //takes in something that is a Filing[]
       }
     }
@@ -465,7 +497,7 @@ function App() {
               let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [lines[i][0], [type], lines[i][1], lines[i][2]]);
               if(filingResults !== null) {
               console.log(filingResults);
-                let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, type, filing.filingDate, filing.document, false, DocumentState.SEARCH));
+                let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, type, filing.filingDate, filing.document, false, filingResults!.state_of_incorporation, filingResults!.ein, filingResults!.address.business, DocumentState.SEARCH));
                 console.log(filingRows);
                 //setFilingResultList(filingRows); //takes in something that is a Filing[]
                 // this seems... messy
@@ -683,7 +715,7 @@ function App() {
         <Row className="mb-3">
           {/* Path Button */}
           <Col>
-            <Button variant="secondary" disabled = {!spinnerOn} onClick={handleOutputPath}>Choose Path for Download</Button>{' '}
+            <Button variant="secondary" disabled = {spinnerOn} onClick={handleOutputPath}>Choose Path for Download</Button>{' '}
           </Col>
         </Row>
         {/* Display Path */}
@@ -698,7 +730,7 @@ function App() {
         {/* NER Check */}
         <Row className="mb-3">
           <Col>
-            <FormCheck id = "NERCheck" disabled = {!spinnerOn} type="checkbox" onChange={handleNERCheck} label="Apply Named Entity Recognition to Queue" />
+            <FormCheck id = "NERCheck" disabled = {spinnerOn} type="checkbox" onChange={handleNERCheck} label="Apply Named Entity Recognition to Queue" />
           </Col>
         </Row>
         {/* Download Button */}
@@ -707,7 +739,7 @@ function App() {
             <Button variant="primary" disabled = {!allowedToExtract} onClick={handleExtractInfoClick}>Extract & Download</Button>
           </Col>
           <Col>
-            <Spinner animation="border" variant="primary" hidden={spinnerOn}/>
+            <Spinner animation="border" variant="primary" hidden={!spinnerOn}/>
           </Col>
         </Row>
         {/* Queue Table */}
@@ -732,6 +764,7 @@ function App() {
                   filing={filing} 
                   addToQueue={addQueueFilingToMap} 
                   removeFromQueue={removeQueueFilingFromMap}
+                  disabled={spinnerOn}
                   ></QueueRow>
                 )))}
               </tbody>

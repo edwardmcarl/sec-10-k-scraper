@@ -21,7 +21,6 @@ def run_step(context: Context) -> None:
     print(files_to_copy)
 
     print(f"Moving files from {from_directory} to {to_directory}")
-
-    for file in files_to_copy:
-        shutil.copy(os.path.join(from_directory, file), to_directory)
-        print(f"Moved file {file}")
+    if os.path.exists(to_directory):
+        shutil.rmtree(to_directory)
+    shutil.copytree(from_directory, to_directory)

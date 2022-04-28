@@ -64,10 +64,10 @@ steps:
      cmd: poetry run python api/test/connection_test.py
   - name: pypyr.steps.echo
     in:
-      echoMe: backend/parser
+      echoMe: backend/parse
   - name: pypyr.steps.shell
     in: 
-     cmd: poetry run python parser/test/parser_test.py
+     cmd: poetry run python parse/test/parse_test.py
   - name: pypyr.steps.echo
     in:
       echoMe: backend/misc

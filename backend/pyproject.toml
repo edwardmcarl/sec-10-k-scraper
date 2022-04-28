@@ -5,7 +5,7 @@ description = ""
 authors = ["Edward Carl <55811915+edwardmcarl@users.noreply.github.com>"]
 
 [tool.poetry.dependencies]
-python = ">=3.10, <3.11"
+python = ">=3.9, <3.10"
 pyzmq = "^22.3.0"
 zerorpc = {git = "https://github.com/0rpc/zerorpc-python.git"}
 gevent = "^21.12.0"
@@ -17,8 +17,12 @@ html5lib = "^1.1"
 requests = "^2.27.1"
 pandas = "^1.4.1"
 mashumaro = "^3.0"
+spacy = "^3.2.4"
 types-beautifulsoup4 = "^4.10.18"
 types-urllib3 = "^1.26.11"
+pandas-stubs = "^1.2.0"
+pyinstaller-hooks-contrib = "^2022.4"
+openpyxl = "^3.0.9"
 
 
 [tool.poetry.dev-dependencies]
@@ -27,7 +31,7 @@ mypy = "^0.931"
 flake8 = "^4.0.1"
 docformatter = "^1.4"
 isort = "^5.10.1"
-pyinstaller = "^4.9"
+pyinstaller = "^5.0.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
