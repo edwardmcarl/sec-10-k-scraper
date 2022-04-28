@@ -21,18 +21,18 @@ from misc.rate_limiting import RateLimited  # noqa: E402
 from misc.rate_limiting import RateLimitTracker  # noqa: E402
 
 
-def resource_path(relative_path):
+def ner_model_directory():
     """Get absolute path to resource, works for dev and for PyInstaller"""
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
-    except Exception:
+    except Exception:  # If we're not pyinstaller, use the current working directory (assumed to be the 'backend' folder)
         base_path = os.path.abspath(".")
 
-    return os.path.join(base_path, relative_path)
+    return os.path.join(base_path, os.path.normpath("resources/en_core_web_sm-3.2.0"))
 
 
-nlp = spacy.load(resource_path("resources/en_core_web_sm-3.2.0"))
+nlp = spacy.load(ner_model_directory())
 
 
 class ParserError(Exception):

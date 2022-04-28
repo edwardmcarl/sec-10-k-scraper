@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "prepare": "husky install",
     "postinstall": "npm run postinstall:backend && npm run postinstall:frontend",
-    "postinstall:backend": "cd backend && poetry install && poetry run spacy download en_core_web_sm",
+    "postinstall:backend": "cd backend && poetry install && poetry run pypyr pypyr/download-ner-model",
     "postinstall:frontend": "cd ui && npm install",
     "build:full": "npm run build:backend && npm run build:frontend",
     "build:backend": "cd backend && poetry run pypyr pypyr/quality-check && poetry run pypyr pypyr/build-backend",

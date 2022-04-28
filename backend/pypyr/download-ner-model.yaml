@@ -1,0 +1,28 @@
+steps:
+  - name: helpers.download-file
+    comment: download model off github
+    in:
+      url: https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.2.0/en_core_web_sm-3.2.0.tar.gz
+      to_file: temp/model.tar.gz
+  - name: pypyr.steps.echo
+    in:
+      echoMe: Extracting file
+
+  - name: pypyr.steps.tar
+    in:
+      tar:
+        format: gz
+        extract:
+         - in: temp/model.tar.gz
+           out: temp
+  - name: pypyr.steps.echo
+    in:
+      echoMe: Extracted files to temp
+  - name: helpers.move-file
+    comment: move only the relevant model subdirectory to 'resources'
+    in:
+      from: temp/en_core_web_sm-3.2.0/en_core_web_sm/en_core_web_sm-3.2.0
+      to: resources/en_core_web_sm-3.2.0
+  - name: pypyr.steps.echo
+    in:
+      echoMe: Extracted model to resources!
