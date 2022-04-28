@@ -35,7 +35,7 @@ def ner_model_directory():
 nlp = spacy.load(ner_model_directory())
 
 
-class ParserError(Exception):
+class ParseError(Exception):
     DOCUMENT_NOT_SUPPORTED = "Parsing for this document is not supported"
     SERVER_ERROR = "The SEC EDGAR server could not process the request"
     CONNECTION_ERROR = "The application failed to reach the server"
@@ -49,7 +49,7 @@ class ParserError(Exception):
         super().__init__(self.message)
 
 
-class Parser(RateLimited):
+class Parse(RateLimited):
     HTML5LIB = 0
     HTML_PARSER = 1
     LXML = 2
@@ -121,7 +121,7 @@ class Parser(RateLimited):
 
     def _get_html_data(self, document_url: str):
         if not (document_url.endswith(".htm") or document_url.endswith(".html")):
-            raise ParserError(ParserError.DOCUMENT_NOT_SUPPORTED, document_url)
+            raise ParseError(ParseError.DOCUMENT_NOT_SUPPORTED, document_url)
 
         hdrs = {
             "Host": "www.sec.gov",
@@ -142,19 +142,19 @@ class Parser(RateLimited):
                     data = gzip.decompress(data)
                     data = data.decode(encoding)
                 except Exception as e:
-                    raise ParserError(ParserError.UNEXPECTED_ERROR, originalError=e)
+                    raise ParseError(ParseError.UNEXPECTED_ERROR, originalError=e)
         # HTTPError has to come before URLError. HTTPError is a subset of URLError
         except HTTPError as e:
             if e.code == 404:
-                raise ParserError(
-                    ParserError.NO_FILE_EXISTS_ERROR,
+                raise ParseError(
+                    ParseError.NO_FILE_EXISTS_ERROR,
                     document_url,
                     originalError=e,
                 )
             else:
-                raise ParserError(ParserError.SERVER_ERROR, originalError=e)
+                raise ParseError(ParseError.SERVER_ERROR, originalError=e)
         except URLError as f:
-            raise ParserError(ParserError.CONNECTION_ERROR, originalError=f)
+            raise ParseError(ParseError.CONNECTION_ERROR, originalError=f)
 
         return data
 
@@ -165,7 +165,7 @@ class Parser(RateLimited):
 
         data = self._get_html_data(document_url)
         raw_10k = data
-        regex = re.compile(Parser.COMPLETE_REGEX)
+        regex = re.compile(Parse.COMPLETE_REGEX)
 
         matches = regex.finditer(raw_10k)
         matched_list = [(x.group(), x.start(), x.end()) for x in matches]
@@ -215,7 +215,7 @@ class Parser(RateLimited):
 
         pos_df = (
             pos_df.assign(
-                sort_value=lambda x: [Parser.DICT_FIELDS[value] for value in x["item"]]
+                sort_value=lambda x: [Parse.DICT_FIELDS[value] for value in x["item"]]
             )
             .sort_values("sort_value")
             .drop(labels=["sort_value"], axis=1)
@@ -262,8 +262,8 @@ class Parser(RateLimited):
                 if row[1] == item and max_value < row[2]:
                     location_start = None
                     location_end = None
-                    index = Parser.DICT_FIELDS[item]
-                    fields = list(Parser.DICT_FIELDS.keys())
+                    index = Parse.DICT_FIELDS[item]
+                    fields = list(Parse.DICT_FIELDS.keys())
                     for i in range(len(fields[:index]) - 1, -1, -1):
                         if fields[i] in pos_df.index:
                             location_start = fields[i]
@@ -309,7 +309,7 @@ class Parser(RateLimited):
         index_length = len(pos_df.index)
         for index, item in enumerate(pos_df.index):
             gevent.sleep(0)  # yield execution
-            if item in Parser.EXTRACTED_FIELDS:
+            if item in Parse.EXTRACTED_FIELDS:
                 if index < index_length - 1:
                     text = raw_10k[
                         pos_df["start"]
@@ -406,7 +406,7 @@ class Parser(RateLimited):
 def profile_this():
     docurl = "https://www.sec.gov/Archives/edgar/data/0000037996/000003799621000012/f-20201231.htm"
     c = RateLimitTracker(5)
-    x = Parser(c)
+    x = Parse(c)
     x.parse_document(docurl)
 
 

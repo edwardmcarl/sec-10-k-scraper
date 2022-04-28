@@ -2,4 +2,4 @@
 ignore=E501, W503
 # Ignoring E203 whitespace before ':' because black library formats in that way but it is conflicting with flake8 for parser/parser.py
 per-file-ignores =
-    parser/parser.py:E203
+    parse/parse.py:E203
