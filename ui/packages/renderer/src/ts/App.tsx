@@ -251,7 +251,7 @@ function App() {
     if (path !== '' && queueFilingMap.size > 0) {
       setAllowedToExtract(true);
     }
-    setAlertMessageQueue(new AlertData('', false));
+    clearOffcanvasAlertMap();
     setShow(true);
   };
 
@@ -271,7 +271,8 @@ function App() {
   const [formType, setFormType] = useState(defaultForm);
 
   const [alertMessage, setAlertMessage] = useState(new AlertData('', false));
-  const [alertMessageQueue, setAlertMessageQueue] = useState(new AlertData('', false));
+  const [alertMessageSearchMap, setAlertMessageSearchMap] = useState(new Map<string, AlertData>());
+  const [alertMessageOffcanvasMap, setAlertMessageOffcanvasMap] = useState(new Map<string, AlertData>());
 
   const [performNER, setPerformNER] = useState(false); // check box for NER changes this value
 
@@ -302,11 +303,34 @@ function App() {
     }
   };
 
+
+  const addSearchAlertToAlertMap = (alert: AlertData) => { // add alert to alert map
+    let newAlertMap = new Map<string, AlertData>(alertMessageSearchMap); // create a new map copying the old alert map
+    newAlertMap.set(alert.errorText, alert); // add alert to map
+    setAlertMessageSearchMap(newAlertMap); // update the map
+  };
+
+  const clearSearchAlertMap = () => { // clear alert map
+    setAlertMessageSearchMap(new Map<string, AlertData>()); // update the map
+  };
+
+  const addOffcanvasAlertToAlertMap = (alert: AlertData) => { // add alert to alert map
+    let newAlertMap = new Map<string,AlertData>(alertMessageOffcanvasMap); // create a new map copying the old alert map
+    if(!newAlertMap.has(alert.errorText)) { // if alert doesn't exists
+      newAlertMap.set(alert.errorText, alert); // add alert to map alert
+      setAlertMessageOffcanvasMap(newAlertMap); // update the map alert
+    }
+  };
+
+  const clearOffcanvasAlertMap = () => { // remove alert from alert map
+    setAlertMessageOffcanvasMap(new Map<string,AlertData>()); // update the map alert
+  };
+
   let searchRequestQueue = useRef<string[]>([]);
   let searchRequestOngoing = useRef<boolean>(false);
 
   const handleSearchClick = async () => { // Triggers when search button is clicked
-    setAlertMessage(new AlertData('', false)); // reset alert
+    clearSearchAlertMap(); // clear alert map
     let startDateISO = startDate.toISOString().split('T')[0]; // get start date in ISO format
     let endDateISO = endDate.toISOString().split('T')[0]; // get end date in ISO format
     try {
@@ -317,14 +341,14 @@ function App() {
       }
       if(filingResultList.length === 0) { // Checking to see if no results were found
         let errorMessage: AlertData = new AlertData('No filings found', true); // create error message for empty search
-        setAlertMessage(errorMessage); // set alert message
+        addSearchAlertToAlertMap(errorMessage); // set alert message
       }
     }
     catch (error: any) {
       let strError = error.message;
       strError = strError.split(':').pop();
       let errorMessage: AlertData = new AlertData(strError, true); // create error message for empty search
-      setAlertMessage(errorMessage); // set alert message
+      addSearchAlertToAlertMap(errorMessage); // set alert message
     }
   };
 
@@ -340,14 +364,10 @@ function App() {
   };
 
   const handleExtractInfoClick = async () => {
-    // include perfromNER in the call
-
     setSpinnerOn(true);
-    console.log(Array.from(queueFilingMap.values()));
-
     if(queueFilingMap.size < 1) {
       let errorMessage: AlertData = new AlertData('No filings in queue', true); // create error message for empty search
-      setAlertMessageQueue(errorMessage); // set alert message
+      addOffcanvasAlertToAlertMap(errorMessage); // set alert message
     } else {
       for(let filing of queueFilingMap) {
         filing[1].status = DocumentState.IN_PROGRESS;
@@ -385,15 +405,14 @@ function App() {
     let pathInput:string[] | undefined = await window.pathSelector.pathSelectorWindow();
     if(pathInput !== undefined) {
       let inputPath = pathInput[0];
-      console.log(inputPath);
       setPath(inputPath);
       if (queueFilingMap.size > 0) {
         setAllowedToExtract(true);
       }
     }
-    else {
+    else if( pathInput === undefined && path === '') {
       let errorMessage: AlertData = new AlertData('No path selected', true); // create error message for empty search
-      setAlertMessageQueue(errorMessage); // set alert message
+      addOffcanvasAlertToAlertMap(errorMessage); // set alert message
     }
   };
   
@@ -423,7 +442,7 @@ function App() {
       return;
     }
     searchRequestOngoing.current = true; //Signal process is now ongoing
-    setAlertMessage(new AlertData('', false));
+    clearSearchAlertMap(); //Clear offcanvas alert map
     setName(nameValue); // set the new input
     // even if we've selected already an item from the list, we should reset it since it's been changed
     setIsNameSelected(false);
@@ -440,7 +459,7 @@ function App() {
           let strError = error.message;
           strError = strError.split(':').pop();
           let errorMessage: AlertData = new AlertData(strError, true); // create error message for empty search
-          setAlertMessage(errorMessage); // set alert message
+          addSearchAlertToAlertMap(errorMessage); // set alert message
           // loading spinner
           setIsLoading(false);
         })
@@ -472,7 +491,7 @@ function App() {
       let strError = error.message;
       strError = strError.split(':').pop();
       let errorMessage: AlertData = new AlertData(strError, true); // create error message for empty search
-      setAlertMessage(errorMessage); // set alert message
+      addSearchAlertToAlertMap(errorMessage); // set alert message
     }
   };
 
@@ -523,13 +542,13 @@ function App() {
               let strError = error.message;
               strError = strError.split(':').pop();
               let errorMessage: AlertData = new AlertData(strError, true); // create error message for empty search
-              setAlertMessage(errorMessage); // set alert message            }
+              addSearchAlertToAlertMap(errorMessage); // set alert message            }
           }
         }
           else {
             let strError = 'You need to put in a CIK and a start date and an end date for line ' + (i + 1);
             let errorMessage: AlertData = new AlertData(strError, true); // create error message for empty search
-            setAlertMessage(errorMessage); // set alert message
+            addSearchAlertToAlertMap(errorMessage); // set alert message
 
           }
         }
@@ -670,7 +689,9 @@ function App() {
     <Container id="errorDiv">
       <Row className="mb-3">
         <Col>
-          <EmptySearchAlert errorText={alertMessage.errorText} showAlert={alertMessage.showAlert} ></EmptySearchAlert>
+            {Array.from(alertMessageSearchMap.values()).map((alertMessage) => (
+              <EmptySearchAlert key = {alertMessage.errorText} errorText={alertMessage.errorText} showAlert={alertMessage.showAlert} ></EmptySearchAlert>
+            ))}
         </Col>
       </Row>
     </Container>
@@ -733,7 +754,9 @@ function App() {
         </Row>
         <Row className="mb-3">
           <Col>
-            <EmptySearchAlertQueue errorText={alertMessageQueue.errorText} showAlert={alertMessageQueue.showAlert} ></EmptySearchAlertQueue>
+            {Array.from(alertMessageOffcanvasMap.values()).map((alertMessage) => (
+              <EmptySearchAlertQueue key = {alertMessage.errorText} errorText={alertMessage.errorText} showAlert={alertMessage.showAlert} ></EmptySearchAlertQueue>
+            ))}
           </Col>
         </Row>
         {/* NER Check */}
