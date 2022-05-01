@@ -88,7 +88,8 @@ export async function launchPythonBackend() {
   
   // block until the backend process prints its port
   let portString:string = await new Promise(resolve=> {
-    rl.question('',resolve);
+    rl.once('line', resolve);
   });
+  console.error(portString);
   connectToBackend(portString);
 }

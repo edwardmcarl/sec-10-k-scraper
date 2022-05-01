@@ -1,4 +1,5 @@
 import signal
+import sys
 import threading
 from enum import Enum
 from pathlib import Path
@@ -15,6 +16,7 @@ from parse.parse import Parse
 from writer.write_to_excel import DataWriter
 
 
+killServer = False # Will be mutated unsafely by a kill-listener thread; doesn't result in race conditions
 class JobState(str, Enum):
     NO_WORK = "No Work"
     WORKING = "Working"
@@ -124,10 +126,11 @@ BIND_ADDRESS = "tcp://127.0.0.1:55565"
 
 
 def kill_signal_listener(srv: zerorpc.Server):
+    global killServer
     while True:
         msg = input()
         if msg == "kill":
-            srv.stop()
+            killServer = True
 
 
 def bind_to_unused_port(srv: zerorpc.Server, port: int = 55555):
@@ -154,7 +157,14 @@ def foo():
         "EXXON_421-2934.html",
     )
 
-
+def exit_gracefully(srv: zerorpc.Server):
+    while True:
+        if killServer:
+            srv.stop()
+            gevent.sleep(1)
+            srv.close()
+            sys.exit()
+        gevent.sleep(1)
 def main():
     rate_limiter = RateLimitTracker(5)
     api_instance = BackendServer(rate_limiter)
@@ -169,10 +179,10 @@ def main():
     kill_signal_thread = threading.Thread(target=kill_signal_listener, args=[server])
     kill_signal_thread.daemon = True
     kill_signal_thread.start()
+    
+    # new greenlet - checks killSignal and stops the event loop (and therefore the main thread) if it's  true
+    gevent.spawn(exit_gracefully, server)
 
-    # handle kill signals on mac/linux (e.g. ctrl-c)
-    gevent.signal_handler(signal.SIGTERM, server.stop)
-    gevent.signal_handler(signal.SIGINT, server.stop)
 
     server.run()
 
