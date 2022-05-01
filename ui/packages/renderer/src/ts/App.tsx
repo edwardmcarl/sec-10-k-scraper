@@ -5,7 +5,7 @@ import '../css/App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.min.js';
 import React from 'react';
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useRef} from 'react';
 import {Button, Col, Container, Dropdown, Row, FormControl, FormCheck, FormGroup, Table, ListGroup, ListGroupItem, Spinner, Offcanvas, OffcanvasHeader, OffcanvasBody, OffcanvasTitle, Alert, Image, Modal, ModalBody, ModalHeader, ModalTitle } from 'react-bootstrap';
 import DatePicker from 'react-date-picker';
 import { string } from 'prop-types';
@@ -168,7 +168,7 @@ function QueueRow(props: QueueRowProps) { // row for queue
       <td>{props.filing.filingType}</td>
       <td>{props.filing.filingDate}</td>
       <td align="center">
-        <Button variant="danger" disabled = {props.disabled} onClick={(event) => {handleRemoveClick();}}>X</Button>
+        <Button variant="danger" disabled = {props.disabled} onClick={(event) => {handleRemoveClick();}}>Remove From Queue</Button>
       </td>
     </tr>
   );
@@ -201,17 +201,6 @@ function EmptySearchAlertQueue(props: AlertData) { // alert for empty search
   return (<text></text>); // return nothing
 }
 
-// experimenting https://devrecipes.net/typeahead-with-react-hooks-and-bootstrap/
-let dropdownData: (Result | undefined)[]; // data for the dropdown
-const mockResults = (keyword: string) => { // mock results
-  return new Promise((res, rej) => {
-    setTimeout(() => {
-      const searchResults = dropdownData;
-      res(searchResults);
-    }, 500);
-  });
-};
-
 // type for the result of the search() Python call
 interface searchResult { // type for the result of the search() Python call
   cik: string, // cik number
@@ -230,26 +219,17 @@ class WhateverFiling {
 
 // called by handleInputChange, has to be async
 async function updateSearchInput(input: string) {
-  // get the new input
+  // get the new input;
   const searchInput = input;
   // call search function in API library created by Sena
-  try {
-    let entityList = await window.requestRPC.procedure('search', [searchInput]);
+  const entityList = await window.requestRPC.procedure('search', [searchInput]);
     // convert entityList to usable form
-    let entityClassList = (entityList as searchResult[]).map((member) => { 
-      if ((member as searchResult).cik !== undefined && (member as searchResult).entity !== undefined) { //type guard
-        return new Result(member.cik, member.entity);
-      }
-    });
-    // update the dropdownData
-    dropdownData = entityClassList;
-    // for development purposes
-    console.log(entityClassList);
-    console.log('searched');
-  } 
-  catch (error) {
-    console.log(error);
-  }
+  const entityClassList = (entityList as searchResult[]).map((member) => { 
+    if ((member as searchResult).cik !== undefined && (member as searchResult).entity !== undefined) { //type guard
+      return new Result(member.cik, member.entity);
+    }
+  });
+  return entityClassList;
 }
 
 function App() {
@@ -284,7 +264,6 @@ function App() {
   const [startDate, setStartDate] = useState(oneYearAgo);
   const [endDate, setEndDate ] = useState(currentDate);
   const [filingResultList, setFilingResultList] = useState(new Array<Filing>()); // input data from API
-  const [searchBarContents, setSearchBarContents] = useState('');
   //Map that essentially acts as a Set, to track what filings are in the list
   const [queueFilingMap, setQueueFilingMap] = useState(new Map<string,Filing>()); // "queue of filings"
 
@@ -325,6 +304,7 @@ function App() {
     }
   };
 
+
   const addSearchAlertToAlertMap = (alert: AlertData) => { // add alert to alert map
     let newAlertMap = new Map<string, AlertData>(alertMessageSearchMap); // create a new map copying the old alert map
     newAlertMap.set(alert.errorText, alert); // add alert to map
@@ -346,6 +326,9 @@ function App() {
   const clearOffcanvasAlertMap = () => { // remove alert from alert map
     setAlertMessageOffcanvasMap(new Map<string,AlertData>()); // update the map alert
   };
+
+  let searchRequestQueue = useRef<string[]>([]);
+  let searchRequestOngoing = useRef<boolean>(false);
 
   const handleSearchClick = async () => { // Triggers when search button is clicked
     clearSearchAlertMap(); // clear alert map
@@ -411,10 +394,7 @@ function App() {
   }
   const pollJobState = async () => {
     let time = Date.now();
-    console.log('Poll at ' + time);
     let backendState: BackendState = await window.requestRPC.procedure('get_job_state');
-    console.log('Response to ' + time + ': ');
-    console.log(backendState);
     setSpinnerOn(backendState.state === JobState.WORKING);
   };
 
@@ -444,27 +424,58 @@ function App() {
     }
   };
   
-  // experimenting https://devrecipes.net/typeahead-with-react-hooks-and-bootstrap/
   const handleInputChange = (e: any) => { // Triggers when search bar is changed
-    const nameValue = e.target.value; // get the new input
+    /*
+    This event handling is done with a queue.
+    Multiple requests were getting sent and some updates were slow
+    hence the results of a trigger made few seconds ago will erase 
+    a trigger soon after that.
+    
+    This queue ensures all requests are executed and completed in order.
+    */
+    searchRequestQueue.current.push(e.target.value);
+    if(!searchRequestOngoing.current){//Check if the queue is currently being processed
+      processQueueRequests(); //Process queue if not
+    }
+  };
+
+  const processQueueRequests = () => {
+    processQueueRequestsRecursive(searchRequestQueue.current.shift());
+  };
+
+  const processQueueRequestsRecursive = (nameValue: string| undefined) => {
+    if(nameValue === undefined){ //End of queue
+      //Signal processing is done
+      searchRequestOngoing.current = false;
+      return;
+    }
+    searchRequestOngoing.current = true; //Signal process is now ongoing
+    setAlertMessage(new AlertData('', false));
     setName(nameValue); // set the new input
-    setSearchBarContents(nameValue); // set the new input
-    updateSearchInput(nameValue); // update the search input
     // even if we've selected already an item from the list, we should reset it since it's been changed
     setIsNameSelected(false);
-    // clean previous results, as would be the case if we get the results from a server
-    // TO DO figure out how this works. and make it better. catch errors, basically.
     setResults([]); // clean previous results
     if (nameValue.length > 1) { // if the input is more than 1 character
       setIsLoading(true); // set loading to true
-      mockResults(nameValue)  // get the results
-        .then((res) => { 
+      updateSearchInput(nameValue)  // get the results
+        .then((res) => {
           setResults(res as React.SetStateAction<never[]>); // set the results
           setIsLoading(false); // set loading to false
         })
-        .catch(() => {
+        .catch((error) => {
+          // error bubble
+          let strError = error.message;
+          strError = strError.split(':').pop();
+          let errorMessage: AlertData = new AlertData(strError, true); // create error message for empty search
+          setAlertMessage(errorMessage); // set alert message
+          // loading spinner
           setIsLoading(false);
+        })
+        .finally(()=>{
+          processQueueRequests(); //Process next requests after promise
         });
+    }else{
+      processQueueRequests();
     }
   };
 
@@ -474,7 +485,7 @@ function App() {
     setName(selectedResult.name); // set the new input
     setResult(selectedResult); // set the new input
     setIsNameSelected(true); // set the new input
-    setResults([]); // clean previous results
+    setResults([]); // clean previous resultsd
     let startDateISO = startDate.toISOString().split('T')[0];   // get start date in ISO format
     let endDateISO = endDate.toISOString().split('T')[0]; // get end date in ISO format
     try {
@@ -581,7 +592,6 @@ function App() {
         />
         <ListGroup className="typeahead-list-group">
           {!isNameSelected &&
-            results !== undefined &&
             results.length > 0 &&
             results.map((result: Result) => (
               <ListGroupItem
@@ -592,7 +602,7 @@ function App() {
                 {result.cik + ' | ' + result.name}
               </ListGroupItem>
             ))}
-          {results !== undefined && !results.length && isLoading && (
+          {!results.length && isLoading && (
             <div className="typeahead-spinner-container">
               <Spinner animation="border" />
             </div>
