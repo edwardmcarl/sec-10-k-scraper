@@ -1,4 +1,3 @@
-import signal
 import sys
 import threading
 from enum import Enum
@@ -15,8 +14,9 @@ from misc.rate_limiting import RateLimitTracker
 from parse.parse import Parse
 from writer.write_to_excel import DataWriter
 
+killServer = False  # Will be mutated unsafely by a kill-listener thread; doesn't result in race conditions
 
-killServer = False # Will be mutated unsafely by a kill-listener thread; doesn't result in race conditions
+
 class JobState(str, Enum):
     NO_WORK = "No Work"
     WORKING = "Working"
@@ -157,6 +157,7 @@ def foo():
         "EXXON_421-2934.html",
     )
 
+
 def exit_gracefully(srv: zerorpc.Server):
     while True:
         if killServer:
@@ -165,6 +166,8 @@ def exit_gracefully(srv: zerorpc.Server):
             srv.close()
             sys.exit()
         gevent.sleep(1)
+
+
 def main():
     rate_limiter = RateLimitTracker(5)
     api_instance = BackendServer(rate_limiter)
@@ -179,10 +182,9 @@ def main():
     kill_signal_thread = threading.Thread(target=kill_signal_listener, args=[server])
     kill_signal_thread.daemon = True
     kill_signal_thread.start()
-    
+
     # new greenlet - checks killSignal and stops the event loop (and therefore the main thread) if it's  true
     gevent.spawn(exit_gracefully, server)
-
 
     server.run()
 
