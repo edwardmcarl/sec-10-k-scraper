@@ -5,7 +5,7 @@ import '../css/App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.min.js';
 import React from 'react';
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useRef} from 'react';
 import {Button, Col, Container, Dropdown, Row, FormControl, FormCheck, FormGroup, Table, ListGroup, ListGroupItem, Spinner, Offcanvas, OffcanvasHeader, OffcanvasBody, OffcanvasTitle, Alert, Image, Modal, ModalBody, ModalHeader, ModalTitle } from 'react-bootstrap';
 import DatePicker from 'react-date-picker';
 import { string } from 'prop-types';
@@ -221,29 +221,15 @@ class WhateverFiling {
 async function updateSearchInput(input: string) {
   // get the new input;
   const searchInput = input;
-  let entityList;
-  let entityClassList: (Result | undefined) [];
-  let err: (unknown|undefined);
-  try {
-    entityList = await window.requestRPC.procedure('search', [searchInput]);
-    // convert entityList to usable form
-    entityClassList = (entityList as searchResult[]).map((member) => { 
-      if ((member as searchResult).cik !== undefined && (member as searchResult).entity !== undefined) { //type guard
-        return new Result(member.cik, member.entity);
-      }
-    });
-  } 
-  catch (error) {
-    err = error;
-  }
   // call search function in API library created by Sena
-  return new Promise((res, rej) => {
-      if (err){
-        rej(err);
-      }else{
-        res(entityClassList);
-      }
-    });
+  const entityList = await window.requestRPC.procedure('search', [searchInput]);
+    // convert entityList to usable form
+  const entityClassList = (entityList as searchResult[]).map((member) => { 
+    if ((member as searchResult).cik !== undefined && (member as searchResult).entity !== undefined) { //type guard
+      return new Result(member.cik, member.entity);
+    }
+  });
+  return entityClassList;
 }
 
 function App() {
@@ -316,6 +302,9 @@ function App() {
     }
   };
 
+  let searchRequestQueue = useRef<string[]>([]);
+  let searchRequestOngoing = useRef<boolean>(false);
+
   const handleSearchClick = async () => { // Triggers when search button is clicked
     setAlertMessage(new AlertData('', false)); // reset alert
     let startDateISO = startDate.toISOString().split('T')[0]; // get start date in ISO format
@@ -380,10 +369,7 @@ function App() {
   }
   const pollJobState = async () => {
     let time = Date.now();
-    console.log('Poll at ' + time);
     let backendState: BackendState = await window.requestRPC.procedure('get_job_state');
-    console.log('Response to ' + time + ': ');
-    console.log(backendState);
     setSpinnerOn(backendState.state === JobState.WORKING);
   };
 
@@ -411,11 +397,33 @@ function App() {
     }
   };
   
-  // adapted from https://devrecipes.net/typeahead-with-react-hooks-and-bootstrap/
   const handleInputChange = (e: any) => { // Triggers when search bar is changed
-    // remove error bubble
-    setAlertMessageQueue(new AlertData('', false));
-    const nameValue = e.target.value; // get the new input
+    /*
+    This event handling is done with a queue.
+    Multiple requests were getting sent and some updates were slow
+    hence the results of a trigger made few seconds ago will erase 
+    a trigger soon after that.
+    
+    This queue ensures all requests are executed and completed in order.
+    */
+    searchRequestQueue.current.push(e.target.value);
+    if(!searchRequestOngoing.current){//Check if the queue is currently being processed
+      processQueueRequests(); //Process queue if not
+    }
+  };
+
+  const processQueueRequests = () => {
+    processQueueRequestsRecursive(searchRequestQueue.current.shift());
+  };
+
+  const processQueueRequestsRecursive = (nameValue: string| undefined) => {
+    if(nameValue === undefined){ //End of queue
+      //Signal processing is done
+      searchRequestOngoing.current = false;
+      return;
+    }
+    searchRequestOngoing.current = true; //Signal process is now ongoing
+    setAlertMessage(new AlertData('', false));
     setName(nameValue); // set the new input
     // even if we've selected already an item from the list, we should reset it since it's been changed
     setIsNameSelected(false);
@@ -423,7 +431,7 @@ function App() {
     if (nameValue.length > 1) { // if the input is more than 1 character
       setIsLoading(true); // set loading to true
       updateSearchInput(nameValue)  // get the results
-        .then((res) => { 
+        .then((res) => {
           setResults(res as React.SetStateAction<never[]>); // set the results
           setIsLoading(false); // set loading to false
         })
@@ -435,7 +443,12 @@ function App() {
           setAlertMessage(errorMessage); // set alert message
           // loading spinner
           setIsLoading(false);
+        })
+        .finally(()=>{
+          processQueueRequests(); //Process next requests after promise
         });
+    }else{
+      processQueueRequests();
     }
   };
 
@@ -568,8 +581,7 @@ function App() {
         </style>
         <ListGroup className="typeahead-list-group">
           {!isNameSelected &&
-            results !== undefined &&
-            results.length > 0 && name.length > 1 &&
+            results.length > 0 &&
             results.map((result: Result) => (
               <ListGroupItem
                 key={result.cik}
@@ -579,7 +591,7 @@ function App() {
                 {result.cik + ' | ' + result.name}
               </ListGroupItem>
             ))}
-          {results !== undefined && !results.length && isLoading && (
+          {!results.length && isLoading && (
             <div className="typeahead-spinner-container">
               <Spinner animation="border" />
             </div>
