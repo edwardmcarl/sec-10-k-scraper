@@ -248,11 +248,10 @@ function App() {
   const [allowedToExtract, setAllowedToExtract] = useState(false); // button for extract
 
   const handleShow = () => {
-    console.log(path);
     if (path !== '' && queueFilingMap.size > 0) {
       setAllowedToExtract(true);
     }
-    clearOffcanvasAlertMap();
+    setAlertMessageQueue(new AlertData('', false));
     setShow(true);
   };
 
@@ -272,20 +271,19 @@ function App() {
   const [formType, setFormType] = useState(defaultForm);
 
   const [alertMessage, setAlertMessage] = useState(new AlertData('', false));
-  const [alertMessageSearchMap, setAlertMessageSearchMap] = useState(new Map<string, AlertData>());
-  const [alertMessageOffcanvasMap, setAlertMessageOffcanvasMap] = useState(new Map<string, AlertData>());
+  const [alertMessageQueue, setAlertMessageQueue] = useState(new AlertData('', false));
 
   const [performNER, setPerformNER] = useState(false); // check box for NER changes this value
 
   const [smShow, setSmShow] = useState(false); // shows popup for input file
 
   const [path, setPath] = useState(''); // path for download] # await window.desktopPath.getDesktopPath()
-  // useEffect(()=> {
-  //   const setPathToDesktop = async () => {
-  //     setPath(await window.desktopPath.getDesktopPath());
-  //   };
-  //   setPathToDesktop().catch(console.log);
-  // }, []); // empty list as second argument means that it only triggers once, on component mount. Acts like a 'default'
+  useEffect(()=> {
+    const setPathToDesktop = async () => {
+      setPath(await window.desktopPath.getDesktopPath());
+    };
+    setPathToDesktop().catch(console.log);
+  }, []); // empty list as second argument means that it only triggers once, on component mount. Acts like a 'default'
   const [spinnerOn, setSpinnerOn] = useState(true); // spinner for download
 
   const addQueueFilingToMap = (f: Filing) => { // add filing to queue
@@ -304,34 +302,11 @@ function App() {
     }
   };
 
-
-  const addSearchAlertToAlertMap = (alert: AlertData) => { // add alert to alert map
-    let newAlertMap = new Map<string, AlertData>(alertMessageSearchMap); // create a new map copying the old alert map
-    newAlertMap.set(alert.errorText, alert); // add alert to map
-    setAlertMessageSearchMap(newAlertMap); // update the map
-  };
-
-  const clearSearchAlertMap = () => { // clear alert map
-    setAlertMessageSearchMap(new Map<string, AlertData>()); // update the map
-  };
-
-  const addOffcanvasAlertToAlertMap = (alert: AlertData) => { // add alert to alert map
-    let newAlertMap = new Map<string,AlertData>(alertMessageOffcanvasMap); // create a new map copying the old alert map
-    if(!newAlertMap.has(alert.errorText)) { // if alert doesn't exists
-      newAlertMap.set(alert.errorText, alert); // add alert to map alert
-      setAlertMessageOffcanvasMap(newAlertMap); // update the map alert
-    }
-  };
-
-  const clearOffcanvasAlertMap = () => { // remove alert from alert map
-    setAlertMessageOffcanvasMap(new Map<string,AlertData>()); // update the map alert
-  };
-
   let searchRequestQueue = useRef<string[]>([]);
   let searchRequestOngoing = useRef<boolean>(false);
 
   const handleSearchClick = async () => { // Triggers when search button is clicked
-    clearSearchAlertMap(); // clear alert map
+    setAlertMessage(new AlertData('', false)); // reset alert
     let startDateISO = startDate.toISOString().split('T')[0]; // get start date in ISO format
     let endDateISO = endDate.toISOString().split('T')[0]; // get end date in ISO format
     try {
@@ -342,7 +317,7 @@ function App() {
       }
       if(filingResultList.length === 0) { // Checking to see if no results were found
         let errorMessage: AlertData = new AlertData('No filings found', true); // create error message for empty search
-        addSearchAlertToAlertMap(errorMessage); // set alert message
+        setAlertMessage(errorMessage); // set alert message
       }
     }
     catch (error: any) {
@@ -372,7 +347,7 @@ function App() {
 
     if(queueFilingMap.size < 1) {
       let errorMessage: AlertData = new AlertData('No filings in queue', true); // create error message for empty search
-      addOffcanvasAlertToAlertMap(errorMessage); // set alert message
+      setAlertMessageQueue(errorMessage); // set alert message
     } else {
       for(let filing of queueFilingMap) {
         filing[1].status = DocumentState.IN_PROGRESS;
@@ -416,11 +391,9 @@ function App() {
         setAllowedToExtract(true);
       }
     }
-    else if( pathInput === undefined && path === '') {
+    else {
       let errorMessage: AlertData = new AlertData('No path selected', true); // create error message for empty search
-      addOffcanvasAlertToAlertMap(errorMessage); // set alert message
-      let errorMessage2: AlertData = new AlertData('No path selected 2', true); // create error message for empty search
-      addOffcanvasAlertToAlertMap(errorMessage2); // set alert message
+      setAlertMessageQueue(errorMessage); // set alert message
     }
   };
   
@@ -499,7 +472,7 @@ function App() {
       let strError = error.message;
       strError = strError.split(':').pop();
       let errorMessage: AlertData = new AlertData(strError, true); // create error message for empty search
-      addSearchAlertToAlertMap(errorMessage); // set alert message
+      setAlertMessage(errorMessage); // set alert message
     }
   };
 
@@ -550,13 +523,13 @@ function App() {
               let strError = error.message;
               strError = strError.split(':').pop();
               let errorMessage: AlertData = new AlertData(strError, true); // create error message for empty search
-              addSearchAlertToAlertMap(errorMessage); // set alert message            }
+              setAlertMessage(errorMessage); // set alert message            }
           }
         }
           else {
             let strError = 'You need to put in a CIK and a start date and an end date for line ' + (i + 1);
             let errorMessage: AlertData = new AlertData(strError, true); // create error message for empty search
-            addSearchAlertToAlertMap(errorMessage); // set alert message
+            setAlertMessage(errorMessage); // set alert message
 
           }
         }
@@ -697,9 +670,7 @@ function App() {
     <Container id="errorDiv">
       <Row className="mb-3">
         <Col>
-            {Array.from(alertMessageSearchMap.values()).map((alertMessage) => (
-              <EmptySearchAlert key = {alertMessage.errorText} errorText={alertMessage.errorText} showAlert={alertMessage.showAlert} ></EmptySearchAlert>
-            ))}
+          <EmptySearchAlert errorText={alertMessage.errorText} showAlert={alertMessage.showAlert} ></EmptySearchAlert>
         </Col>
       </Row>
     </Container>
@@ -762,9 +733,7 @@ function App() {
         </Row>
         <Row className="mb-3">
           <Col>
-            {Array.from(alertMessageOffcanvasMap.values()).map((alertMessage) => (
-              <EmptySearchAlertQueue key = {alertMessage.errorText} errorText={alertMessage.errorText} showAlert={alertMessage.showAlert} ></EmptySearchAlertQueue>
-            ))}
+            <EmptySearchAlertQueue errorText={alertMessageQueue.errorText} showAlert={alertMessageQueue.showAlert} ></EmptySearchAlertQueue>
           </Col>
         </Row>
         {/* NER Check */}
