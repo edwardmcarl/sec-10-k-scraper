@@ -248,7 +248,6 @@ function App() {
   const [allowedToExtract, setAllowedToExtract] = useState(false); // button for extract
 
   const handleShow = () => {
-    console.log(path);
     if (path !== '' && queueFilingMap.size > 0) {
       setAllowedToExtract(true);
     }
@@ -280,12 +279,12 @@ function App() {
   const [smShow, setSmShow] = useState(false); // shows popup for input file
 
   const [path, setPath] = useState(''); // path for download] # await window.desktopPath.getDesktopPath()
-  // useEffect(()=> {
-  //   const setPathToDesktop = async () => {
-  //     setPath(await window.desktopPath.getDesktopPath());
-  //   };
-  //   setPathToDesktop().catch(console.log);
-  // }, []); // empty list as second argument means that it only triggers once, on component mount. Acts like a 'default'
+  useEffect(()=> {
+    const setPathToDesktop = async () => {
+      setPath(await window.desktopPath.getDesktopPath());
+    };
+    setPathToDesktop().catch(console.log);
+  }, []); // empty list as second argument means that it only triggers once, on component mount. Acts like a 'default'
   const [spinnerOn, setSpinnerOn] = useState(true); // spinner for download
 
   const addQueueFilingToMap = (f: Filing) => { // add filing to queue
@@ -349,7 +348,7 @@ function App() {
       let strError = error.message;
       strError = strError.split(':').pop();
       let errorMessage: AlertData = new AlertData(strError, true); // create error message for empty search
-      setAlertMessage(errorMessage); // set alert message
+      addSearchAlertToAlertMap(errorMessage); // set alert message
     }
   };
 
@@ -368,8 +367,6 @@ function App() {
     // include perfromNER in the call
 
     setSpinnerOn(true);
-    console.log(Array.from(queueFilingMap.values()));
-
     if(queueFilingMap.size < 1) {
       let errorMessage: AlertData = new AlertData('No filings in queue', true); // create error message for empty search
       addOffcanvasAlertToAlertMap(errorMessage); // set alert message
@@ -410,7 +407,6 @@ function App() {
     let pathInput:string[] | undefined = await window.pathSelector.pathSelectorWindow();
     if(pathInput !== undefined) {
       let inputPath = pathInput[0];
-      console.log(inputPath);
       setPath(inputPath);
       if (queueFilingMap.size > 0) {
         setAllowedToExtract(true);
@@ -419,8 +415,6 @@ function App() {
     else if( pathInput === undefined && path === '') {
       let errorMessage: AlertData = new AlertData('No path selected', true); // create error message for empty search
       addOffcanvasAlertToAlertMap(errorMessage); // set alert message
-      let errorMessage2: AlertData = new AlertData('No path selected 2', true); // create error message for empty search
-      addOffcanvasAlertToAlertMap(errorMessage2); // set alert message
     }
   };
   
@@ -450,7 +444,7 @@ function App() {
       return;
     }
     searchRequestOngoing.current = true; //Signal process is now ongoing
-    setAlertMessage(new AlertData('', false));
+    clearSearchAlertMap(); //Clear offcanvas alert map
     setName(nameValue); // set the new input
     // even if we've selected already an item from the list, we should reset it since it's been changed
     setIsNameSelected(false);
@@ -467,7 +461,7 @@ function App() {
           let strError = error.message;
           strError = strError.split(':').pop();
           let errorMessage: AlertData = new AlertData(strError, true); // create error message for empty search
-          setAlertMessage(errorMessage); // set alert message
+          addSearchAlertToAlertMap(errorMessage); // set alert message
           // loading spinner
           setIsLoading(false);
         })
