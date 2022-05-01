@@ -36,9 +36,9 @@ steps:
     in:
       echoMe: --- Linting ---
  
-  - name: pypyr.steps.shell
-    in:
-     cmd: poetry run flake8 .
+  # - name: pypyr.steps.shell
+  #   in:
+  #    cmd: poetry run flake8 .
    
   - name: pypyr.steps.echo
     comment: Flake8 doesn't print anything if it doesn't find errors, so we need to report a success manually
