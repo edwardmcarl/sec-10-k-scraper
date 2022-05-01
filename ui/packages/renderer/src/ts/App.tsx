@@ -364,8 +364,6 @@ function App() {
   };
 
   const handleExtractInfoClick = async () => {
-    // include perfromNER in the call
-
     setSpinnerOn(true);
     if(queueFilingMap.size < 1) {
       let errorMessage: AlertData = new AlertData('No filings in queue', true); // create error message for empty search
