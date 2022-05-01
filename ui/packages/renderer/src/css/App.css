@@ -40,3 +40,17 @@
 button {
   font-size: calc(10px + 2vmin);
 }
+
+.typeahead-form-group {
+  position: relative;
+}
+
+.typeahead-list-group {
+  position: absolute;
+  width: 100%;
+  z-index: 1000;
+}
+
+.offcanvas-end {
+  width: 700px !important;
+}
