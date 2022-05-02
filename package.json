@@ -10,8 +10,10 @@
     "postinstall:backend": "cd backend && poetry install && poetry run pypyr pypyr/download-ner-model",
     "postinstall:frontend": "cd ui && npm install",
     "build:full": "npm run build:backend && npm run build:frontend",
+    "build:dist": "npm run build:backend && npm run build:frontend:dist",
     "build:backend": "cd backend && poetry run pypyr pypyr/quality-check && poetry run pypyr pypyr/build-backend",
-    "build:frontend": "cd ui && npm run compile"
+    "build:frontend": "cd ui && npm run compile",
+    "build:frontend:dist": "cd ui && npm run build:installer"
   },
   "repository": {
     "type": "git",

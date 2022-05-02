@@ -14,6 +14,8 @@
         "build:renderer": "cd ./packages/renderer && vite build",
         "compile": "cd ../backend && poetry run pypyr pypyr/build-backend && cd ../ui && cross-env MODE=production npm run build && electron-builder build --config .electron-builder.config.js --dir --config.asar=false",
         "build:full": "cd .. && npm run build:full",
+        "build:dist":"cd .. && npm run build:dist",
+        "build:installer": "cross-env MODE=production npm run build && electron-builder build --config .electron-builder.config.js",
         "postinstall": "npx electron-rebuild",
         "test": "npm run test:main && npm run test:preload && npm run test:renderer && npm run test:e2e",
         "test:e2e": "npm run build && vitest run",
