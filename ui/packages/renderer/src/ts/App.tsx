@@ -8,15 +8,17 @@ import React from 'react';
 import {useState, useEffect, useRef} from 'react';
 import {Button, Col, Container, Dropdown, Row, FormControl, FormCheck, FormGroup, Table, ListGroup, ListGroupItem, Spinner, Offcanvas, OffcanvasHeader, OffcanvasBody, OffcanvasTitle, Alert, Image, Modal, ModalBody, ModalHeader, ModalTitle } from 'react-bootstrap';
 import DatePicker from 'react-date-picker';
-import { string } from 'prop-types';
-import { contextIsolated } from 'process';
 
 //Done to make testing possible with react$ in ui/test/specs
 const DropdownToggle = Dropdown.Toggle;
 const DropdownMenu = Dropdown.Menu;
 const DropdownItem = Dropdown.Item;
   
-class Result { // result
+/**
+ * @description class that holds result information to be displayed in dropdown
+ * @params cik: string, name: string
+ */
+class Result {
   cik: string; // cik number
   name: string; // name of result
   constructor(cikIn: string, nameIn: string){
@@ -25,19 +27,10 @@ class Result { // result
   }
 }
 
-// for user inputs through file uploads
-// assuming only 10-K to start
-class UserInput {
-  // CIK of entity
-  cik: string;
-  // year of filings
-  year: string;
-  constructor(cikIn: string, yearIn: string){
-    this.cik = cikIn;
-    this.year = yearIn;
-  }
-}
-
+/**
+ * @description enumeration of filing states at different stages of the process
+ * @params QUEUED: string, PROCESSING: string, COMPLETE: string, ERROR: string
+ */
 enum DocumentState {
   SEARCH = 1,
   IN_QUEUE,
@@ -45,7 +38,11 @@ enum DocumentState {
   DONE,
 }
 
-class Filing { // filing info
+/**
+ * @description class that holds filing information to be displayed in results table
+ * @params entityName: string, cikNumber: string, filingType: string, filingDate: string, documentAddress10k: string, stateOfIncorporation: string, ein: string, hqAddress: AddressData, status: DocumentState 
+ */
+class Filing {
   entityName: string; // name of entity
   cikNumber: string; // cik number
   filingType: string; // type of filing
@@ -54,8 +51,8 @@ class Filing { // filing info
   extractInfo: boolean; // true/false if user wants to extract info from 10-K
   stateOfIncorporation: string; // state of incorporation
   ein: string; // ein
-  hqAddress: AddressData;
-  status: DocumentState;
+  hqAddress: AddressData; // address of headquarters
+  status: DocumentState; // status of the current document
 
   constructor(entityNameIn: string, cikNumberIn: string, filingTypeIn: string, filingDateIn: string, documentAddress10kIn: string, extractInfoIn: boolean, stateOfIncorporationIn: string, einIn: string, addressIn: AddressData, statusIn: DocumentState) {
     this.entityName = entityNameIn;
@@ -71,7 +68,11 @@ class Filing { // filing info
   }
 }
 
-class AlertData { // Help with the alert handling
+/**
+ * @description class that holds error data to be displayed in error popup
+ * @params errorText: string, showAlert: boolean
+ */
+class AlertData {
   errorText: string; // text in alert popup
   showAlert: boolean; // should the alert show or not
   constructor(errorTextIn: string, showAlertIn: boolean) {
@@ -80,22 +81,34 @@ class AlertData { // Help with the alert handling
   }
 }
 
-interface ResultsRowProps { // props for the results row
+/**
+ * @description interface that holds data for each row for the results table
+ * @params filings: Filing, isQueued: boolean, addFilingToQueue: (filing: Filing) => void, removeFilingFromQueue: (filing: Filing) => void
+ */
+interface ResultsRowProps {
   filing: Filing; // filing linked to the row
   isQueued: boolean; // is the filing in the queue
   addFilingToQueue:(filing: Filing)=> void; // add the linked filing to queue
   removeFilingFromQueue:(filing: Filing)=> void; // remove the linked filing from queue
 } 
 
-interface QueueRowProps { // props for the queue row
+/**
+ * @description interface that holds data for each row for the queue table
+ * @params filing: Filing, status: DocumentState, addToQueue: (filing: Filing) => void, removeFromQueue: (filing: Filing) => void, disabled: boolean
+ */
+interface QueueRowProps {
   filing: Filing; // filing linked in queue row
   status: DocumentState; // status of the filing false if in queue, true if extracted
   addToQueue:(filing: Filing)=> void; // add the linked filing to queue
   removeFromQueue:(filing: Filing)=> void; // remove the linked filing from queue
-  disabled: boolean;
+  disabled: boolean; //true if button should be disabled
 }
 
-interface AddressData { // data for the address
+/**
+ * @description interface that holds the address data for filings
+ * @params street1: string, street2: string, city: string, stateOrCountry: string, zipCode: string, stateOrCountryDescription: string
+ */
+interface AddressData { 
   street1: string; // street 1
   street2: string; // street 2
   city: string; // city
@@ -104,6 +117,10 @@ interface AddressData { // data for the address
   stateOrCountryDescription: string; // state or country description
 }
 
+/**
+ * @description interface that holds the data for the filing search
+ * @params reportDate: string, filingDate: string, document: string, form: string, isXBRL: number, isInlineXBRL: number
+ */
 interface FilingData { // data for the filing
   reportDate: string; // report date
   filingDate: string; // filing date
@@ -113,51 +130,64 @@ interface FilingData { // data for the filing
   isInlineXBRL: number; // if it's inline xbrl
 }
 
+/**
+ * @description interface that holds the data additional address data
+ * @params mailing: AddressData, business: AddressData
+ */
 interface BulkAddressData { // data for a bulk address
   mailing: AddressData; // mailing address
   business: AddressData; // business address
 }
 
+/**
+ * @description interface that holds the data for the form data
+ * @params cik: string, issuing_entity: string, state_of_incorporation: string, ein: string, forms: Array<string>, address: BulkAddressData, filings: Array<FilingData>
+ */
 interface FormData { // data for the form
   cik: string; // cik number
   issuing_entity: string; // issuing entity name
   state_of_incorporation: string; // state of incorporation
   ein: string; // ein
-  forms: Array<string>; // forms
+  forms: Array<string>; // array of forms
   address: BulkAddressData; // address
-  filings: Array<FilingData>; // filings
+  filings: Array<FilingData>; // array of filings
 }
 
-// class for search results entity-cik pairs
-class WhateverFiling {
-  cik: string;
-  entity:string;
-  constructor(cikIn:string, entityIn:string) {
-    this.cik = cikIn;
-    this.entity = entityIn;
-  }
-}
-
+/**
+ * @description interface that holds the state of backend
+ * @params state: JobState, error: any
+ */
 interface BackendState{
-  'state': JobState,
-  'error' : any
+  'state': JobState, // specifies step of the process for a job
+  'error' : any // error message if any
 }
 
+/**
+ * @description enumeration of the states of jobs
+ * @params NO_WORK, WORKING, COMPLETE, ERROR
+ */
 enum JobState {
-  NO_WORK = 'No Work',
-  WORKING = 'Working',
-  COMPLETE = 'Complete',
-  ERROR = 'Error'
+  NO_WORK = 'No Work', // job is not working
+  WORKING = 'Working', // job is working
+  COMPLETE = 'Complete', // job is complete
+  ERROR = 'Error' // job has an error
 }
 
-
-// type for the result of the search() Python call
-interface searchResult { // type for the result of the search() Python call
+/**
+ * @description interface that holds information for a search result
+ * @params cik: string, entity: string
+ */
+interface searchResult {
   cik: string, // cik number
   entity: string // entity name
 }
 
-function ResultsRow(props: ResultsRowProps) { // row for results
+/**
+ * @description function that returns a row for the results table with Filing information populated, also handles if user adds specific filing to queue or removes it from queue
+ * @param props: ResultsRowProps
+ * @returns HTML for a results table row with Filing information populated
+ */
+function ResultsRow(props: ResultsRowProps) {
   const handleInfoClick = () => { // handle info click
     if (props.isQueued) { // if filing is in queue
       props.removeFilingFromQueue(props.filing); // remove from queue
@@ -185,7 +215,12 @@ function ResultsRow(props: ResultsRowProps) { // row for results
   );
 }
 
-function QueueRow(props: QueueRowProps) { // row for queue
+/**
+ * @description function that returns a row for the queue table with Filing information populated, also handles user removing filing from queue
+ * @param props : QueueRowProps
+ * @returns HTML for a queue table row with Filing information populated
+ */
+function QueueRow(props: QueueRowProps) {
   const handleRemoveClick = () => { // handle remove click
     props.removeFromQueue(props.filing); // remove from queue
   };
@@ -203,8 +238,12 @@ function QueueRow(props: QueueRowProps) { // row for queue
   );
 }
 
-// TODO: Figure out why it takes 2 clicks to bring this up. also getting date errors
-function EmptySearchAlert(props: AlertData) { // alert for empty search
+/**
+ * @description function that builds an alert message for search results
+ * @param props: AlertData
+ * @returns HTML for an alert message with alert message information displayed
+ */
+function EmptySearchAlert(props: AlertData) { 
   if (props.showAlert) { // if alert should show
     return ( // return the alert
       <Alert variant="danger">
@@ -217,7 +256,12 @@ function EmptySearchAlert(props: AlertData) { // alert for empty search
   return (<text></text>); // return nothing
 }
 
-function EmptySearchAlertQueue(props: AlertData) { // alert for empty search
+/**
+ * @description function that builds an alert message for queue
+ * @param props: AlertData
+ * @returns HTML for an alert message with alert message information displayed
+ */
+function EmptySearchAlertQueue(props: AlertData) {
   if (props.showAlert) { // if alert should show
     return ( // return the alert
       <Alert variant="danger">
@@ -230,41 +274,55 @@ function EmptySearchAlertQueue(props: AlertData) { // alert for empty search
   return (<text></text>); // return nothing
 }
 
-// called by handleInputChange, has to be async
+/**
+ * @description function that helps search for entities as user types
+ * @param input: string
+ * @returns class list for search results
+ */
 async function executeEntitySearch(input: string): Promise<Result[]> {
-  // get the new input;
-  const searchInput = input;
-  // call search function in API library created by Sena
-  const entityList: searchResult[] = await window.requestRPC.procedure('search', [searchInput]);
-    // convert entityList to usable form
-  const entityClassList = (entityList).map((member) => { 
+  const searchInput = input; // get the new input;
+  const entityList: searchResult[] = await window.requestRPC.procedure('search', [searchInput]); // call search function in API library created by Sena
+  const entityClassList = (entityList).map((member) => {  // convert entityList to usable form
     return new Result(member.cik, member.entity);
   });
   return entityClassList;
 }
 
-async function executeFormSearch(cik: string, formType: string, startDate: string, endDate: string): Promise<Filing [] | null>{
+/**
+ * @description function that helps update suggested forms as user inputs
+ * @param cik: string
+ * @param formType: string
+ * @param startDate: string
+ * @param endDate: string
+ * @returns map of filings
+ */
+async function executeFormSearch(cik: string, formType: string, startDate: string, endDate: string): Promise<Filing [] | null> {
   let filingResults: FormData | null = await window.requestRPC.procedure('search_form_info', [cik, [formType], startDate, endDate]);
-  if(filingResults === null) { // if filingResults is not null
+  if (filingResults === null) { // if filingResults is not null
     return null;
   }else{
     return filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false, filingResults!.state_of_incorporation, filingResults!.ein, filingResults!.address.business, DocumentState.SEARCH)); // create filing rows
   }
 }
 
+/**
+ * @description function that holds entire application
+ * @returns application
+ */
 function App() {
   
-  const [results, setResults] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [name, setName] = useState('');
-  const [isNameSelected, setIsNameSelected] = useState(false);
+  // for searching entities
+  const [results, setResults] = useState([]); // holds search results
+  const [isLoading, setIsLoading] = useState(false); // holds if search is loading
+  const [name, setName] = useState(''); // holds search input
+  const [isNameSelected, setIsNameSelected] = useState(false); // holds if search input is selected
   
   // For queue/canvas
-  const [show, setShow] = useState(false);
-  const handleClose = () => setShow(false);
+  const [show, setShow] = useState(false); // holds if queue is shown
+  const handleClose = () => setShow(false); // handle close
   const [allowedToExtract, setAllowedToExtract] = useState(false); // button for extract
 
-  const handleShow = () => {
+  const handleShow = () => { // handle to show offcanvas
     if (path !== '' && queueFilingMap.size > 0) {
       setAllowedToExtract(true);
     }
@@ -272,45 +330,46 @@ function App() {
     setShow(true);
   };
 
-  // regularly scheduled programming
+  // Date handling
   let oneYearAgo = new Date();
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
   let currentDate = new Date();
   let defaultForm = '10-K'; // If toggle not chosen, defaults to 10-K
 
-  //App state
-  const [startDate, setStartDate] = useState(oneYearAgo);
-  const [endDate, setEndDate ] = useState(currentDate);
+  //App startup state
+  const [startDate, setStartDate] = useState(oneYearAgo); // holds start date
+  const [endDate, setEndDate ] = useState(currentDate); // holds end date
+  //setStartDate, setEndState and setFormType does not trigger a change that warrants a rerender.
+  //Using mutable objects to maintain value of these three before setting them during rerender in updateSuggestedForms
+  let startDateMutable = useRef<Date>(startDate);
+  let endDateMutable = useRef<Date>(endDate);
+  let formTypeMutable = useRef<string>(defaultForm);
   const [filingResultList, setFilingResultList] = useState<Filing[]>([]); // input data from API
+
   //Map that essentially acts as a Set, to track what filings are in the list
   const [queueFilingMap, setQueueFilingMap] = useState(new Map<string,Filing>()); // "queue of filings"
+
   // Dropdown menu setup
   const [formType, setFormType] = useState(defaultForm);
-  const [alertMessageSearchMap, setAlertMessageSearchMap] = useState(new Map<string, AlertData>());
-  const [alertMessageOffcanvasMap, setAlertMessageOffcanvasMap] = useState(new Map<string, AlertData>());
 
+  // Alerts setup
+  const [alertMessageSearchMap, setAlertMessageSearchMap] = useState(new Map<string, AlertData>()); // holds alert messages for search
+  const [alertMessageOffcanvasMap, setAlertMessageOffcanvasMap] = useState(new Map<string, AlertData>()); // holds alert messages for offcanvas
+
+  // Queue drawer setup
   const [performNER, setPerformNER] = useState(false); // check box for NER changes this value
-
   const [smShow, setSmShow] = useState(false); // shows popup for input file
-
   const [path, setPath] = useState(''); // path for download] # await window.desktopPath.getDesktopPath()
-
   const [spinnerOn, setSpinnerOn] = useState(true); // spinner for download
   
-  // adding something to store entire result
+  // Entity search and result setup
   let result = useRef<Result>(new Result('', ''));
   let entitySuggestionEventQueue = useRef<string[]>([]);
   let entitySuggestionHandlingOngoing = useRef<boolean>(false);
   let searchEventQueue = useRef<(() => void)[]>([]);
   let searchEventHandlingOngoing = useRef<boolean>(false);
-  //setStartDate, setEndState and setFormType does not trigger a change that warrants a rerender.
-  //Do not know why. Guess is the React's diffing determines that there is no need for a rerender or does not do it immediately.
-  //Using mutable objects to maintain value of these three before setting them during rerender
-  //in updateSuggestedForms
-  let startDateMutable = useRef<Date>(startDate);
-  let endDateMutable = useRef<Date>(endDate);
-  let formTypeMutable = useRef<string>(defaultForm);
-
+  
+  // Setting up a default path to user's desktop
   useEffect(()=> {
     const setPathToDesktop = async () => {
       setPath(await window.desktopPath.getDesktopPath());
@@ -318,7 +377,7 @@ function App() {
     setPathToDesktop().catch(console.log);
   }, []); // empty list as second argument means that it only triggers once, on component mount. Acts like a 'default'
 
-  // periodically poll the state of the backend
+  // Periodically poll the state of the backend
   useEffect(()=> {
     const timer = setInterval(()=>{
       pollJobState();
@@ -326,13 +385,15 @@ function App() {
     return ()=> clearInterval(timer);
   });
 
-  const addQueueFilingToMap = (f: Filing) => { // add filing to queue
+  // Add a new filing to the queue map
+  const addQueueFilingToMap = (f: Filing) => {
    let newQueueFilingMap = new Map<string,Filing>(queueFilingMap); // create a new map copying the old queue
    f.status = DocumentState.IN_QUEUE; // set filing to in queue
    newQueueFilingMap.set(f.documentAddress10k, f); // add filing to map queue
    setQueueFilingMap(newQueueFilingMap);  // update the map queue
   };
 
+  // Remove a filing from the queue map
   const removeQueueFilingFromMap = (f: Filing) => { // remove filing from queue
     let newQueueFilingMap = new Map<string,Filing>(queueFilingMap); // create a new map copying the old queue
     newQueueFilingMap.delete(f.documentAddress10k); // remove filing from map queue
@@ -342,28 +403,33 @@ function App() {
     }
   };
 
+  // Add a search alert to the alert map to be displayed
   const addSearchAlertToAlertMap = (alert: AlertData) => { // add alert to alert map
     let newAlertMap = new Map<string, AlertData>(alertMessageSearchMap); // create a new map copying the old alert map
     newAlertMap.set(alert.errorText, alert); // add alert to map
     setAlertMessageSearchMap(newAlertMap); // update the map
   };
 
+  // Clear the alert map for search
   const clearSearchAlertMap = () => { // clear alert map
     setAlertMessageSearchMap(new Map<string, AlertData>()); // update the map
   };
 
+  // Add a offcanvas alert to the alert map to be displayed
   const addOffcanvasAlertToAlertMap = (alert: AlertData) => { // add alert to alert map
     let newAlertMap = new Map<string,AlertData>(alertMessageOffcanvasMap); // create a new map copying the old alert map
-    if(!newAlertMap.has(alert.errorText)) { // if alert doesn't exists
+    if (!newAlertMap.has(alert.errorText)) { // if alert doesn't exists
       newAlertMap.set(alert.errorText, alert); // add alert to map alert
       setAlertMessageOffcanvasMap(newAlertMap); // update the map alert
     }
   };
 
+  // Clear the alert map for offcanvas
   const clearOffcanvasAlertMap = () => { // remove alert from alert map
     setAlertMessageOffcanvasMap(new Map<string,AlertData>()); // update the map alert
   };
 
+  // Update the suggested forms dropdown
   const updateSuggestedForms = () => {
     clearSearchAlertMap(); // clear alert map
     //Set next start date, end date, form type and filing result list even though it does not cause a rerender
@@ -382,18 +448,18 @@ function App() {
     executeFormSearch(result.current.cik, formTypeMutable.current, startDateISO, endDateISO)
     .then((results) => {
       let errorMessage: AlertData| null = null;
-      if (!results){ //Not likely that the form will never be added to search but let us still handle that
+      if (!results) { //Not likely that the form will never be added to search but let us still handle that
         errorMessage = new AlertData('No form is selected', true); // create error message for empty search
-      }else if(results.length === 0){
+      }else if (results.length === 0){
         errorMessage = new AlertData('No filings found', true); // create error message for empty search
       }else{
         setFilingResultList(results);
       }
-      if(errorMessage){
+      if (errorMessage){
         addSearchAlertToAlertMap(errorMessage); // set alert message
       }
     })
-    .catch((error) => {
+    .catch((error) => { // handle error
       let strError = error.message;
       strError = strError.split(':').pop();
       let errorMessage: AlertData = new AlertData(strError, true); // create error message for empty search
@@ -403,9 +469,10 @@ function App() {
     });
   };
 
+  
   const handleSuggestedFormsUpdate: () => void = () => {
     searchEventQueue.current.push(updateSuggestedForms);
-    if(!searchEventHandlingOngoing.current){
+    if (!searchEventHandlingOngoing.current){
       processSearchEventQueueRequests();
     }
   };
@@ -426,13 +493,13 @@ function App() {
     setPerformNER(!performNER); // set performNER to the opposite of what it was
   };
 
-  const handleExtractInfoClick = async () => {
+  const handleExtractInfoClick = async () => { // Triggers when extract info button is clicked
     setSpinnerOn(true);
-    if(queueFilingMap.size < 1) {
+    if (queueFilingMap.size < 1) {
       let errorMessage: AlertData = new AlertData('No filings in queue', true); // create error message for empty search
       addOffcanvasAlertToAlertMap(errorMessage); // set alert message
     } else {
-      for(let filing of queueFilingMap) {
+      for (let filing of queueFilingMap) {
         filing[1].status = DocumentState.IN_PROGRESS;
       }
     }
@@ -440,7 +507,7 @@ function App() {
 
   };
 
-  const pollJobState = async () => {
+  const pollJobState = async () => { // Triggers every second
     let time = Date.now();
     let backendState: BackendState = await window.requestRPC.procedure('get_job_state');
     setSpinnerOn(backendState.state === JobState.WORKING);
@@ -448,14 +515,14 @@ function App() {
 
   const handleOutputPath = async () => {
     let pathInput:string[] | undefined = await window.pathSelector.pathSelectorWindow();
-    if(pathInput !== undefined) {
+    if (pathInput !== undefined) {
       let inputPath = pathInput[0];
       setPath(inputPath);
       if (queueFilingMap.size > 0) {
         setAllowedToExtract(true);
       }
     }
-    else if( pathInput === undefined && path === '') {
+    else if ( pathInput === undefined && path === '') {
       let errorMessage: AlertData = new AlertData('No path selected', true); // create error message for empty search
       addOffcanvasAlertToAlertMap(errorMessage); // set alert message
     }
@@ -474,23 +541,23 @@ function App() {
     // even if we've selected already an item from the list, we should reset it since it's been changed
     setIsNameSelected(false);
     entitySuggestionEventQueue.current.push(e.target.value);
-    if(!entitySuggestionHandlingOngoing.current){//Check if the queue is currently being processed
+    if (!entitySuggestionHandlingOngoing.current){//Check if the queue is currently being processed
       processEntitySuggestionEventQueueRequests(); //Process queue if not
     }
   };
 
-  const processEntitySuggestionEventQueueRequests = () => {
-    while(entitySuggestionEventQueue.current.length > 1) entitySuggestionEventQueue.current.shift();
+  const processEntitySuggestionEventQueueRequests = () => { // Process the queue
+    while (entitySuggestionEventQueue.current.length > 1) entitySuggestionEventQueue.current.shift();
     processEntitySuggestionEventQueueRequestsRecursive(entitySuggestionEventQueue.current.shift());
   };
 
-  const processSearchEventQueueRequests = () => {
-    while(searchEventQueue.current.length > 1) searchEventQueue.current.shift();
+  const processSearchEventQueueRequests = () => { // Processes all search event requests
+    while (searchEventQueue.current.length > 1) searchEventQueue.current.shift();
     processSearchEventQueueRequestsRecursive(searchEventQueue.current.shift());
   };
 
   const processEntitySuggestionEventQueueRequestsRecursive = (nameValue: string| undefined) => {
-    if(nameValue === undefined){ //End of queue
+    if (nameValue === undefined){ //End of queue
       //Signal processing is done
       entitySuggestionHandlingOngoing.current = false;
       return;
@@ -517,7 +584,8 @@ function App() {
         .finally(()=>{
           processEntitySuggestionEventQueueRequests(); //Process next requests after promise
         });
-    }else{
+    }
+    else {
       processEntitySuggestionEventQueueRequests();
     }
   };
@@ -541,12 +609,12 @@ function App() {
     handleSuggestedFormsUpdate();
   };
 
-  const onStartDateChange = (e: any) => {
+  const onStartDateChange = (e: any) => { // Triggers when Start Date input is changed
     startDateMutable.current = e;
     handleSuggestedFormsUpdate();
   };
 
-  const onEndDateChange = (e: any) => {
+  const onEndDateChange = (e: any) => { // Triggers when End Date input is changed
     endDateMutable.current = e;
     handleSuggestedFormsUpdate();
   };
@@ -554,12 +622,11 @@ function App() {
   // https://www.pluralsight.com/guides/how-to-use-a-simple-form-submit-with-files-in-react
   // https://thewebdev.info/2021/11/26/how-to-read-a-text-file-in-react/
   // https://www.youtube.com/watch?v=-AR-6X_98rM&ab_channel=KyleRobinsonYoung
-  // TODO change from e: any to e: some other thing
-  const handleFileUpload = async (e: any) => {
+  const handleFileUpload = async (e: any) => { // Triggers when a file is uploaded; processes file, adds filings to queue
     e.preventDefault();
     const reader: FileReader = new FileReader();
     reader.onload = async (e: ProgressEvent<FileReader>) => {
-      if(e !== null && e.target !== null && e.target.result !== null && /* e.target.result instanceof string && */ !(e.target.result instanceof ArrayBuffer)){
+      if (e !== null && e.target !== null && e.target.result !== null && !(e.target.result instanceof ArrayBuffer)){
         // e.target is a FileReader
         let res: string = e.target.result;
         // put all of the words into arrays, with white space trimmed
@@ -568,26 +635,16 @@ function App() {
             return word.trim();
           });
         });
-        console.log(lines);
-        // is this where I would close the file? certainly doesn't have to be open now. unsure.
         let newQueueFilingMap = new Map<string,Filing>(queueFilingMap);
-        for(let i = 0; i < lines.length; i++){
-          if(lines[i][0] !== null && lines[i][1] !== null && lines[i][2] !== null) {
-            // probably need to check stuff here
+        for (let i = 0; i < lines.length; i++){ // iterate through all lines
+          if (lines[i][0] !== null && lines[i][1] !== null && lines[i][2] !== null) { // check if line has at least 3 words
             let type = '10-K';
-            console.log(lines[i][0]);
-            console.log(lines[i][1]);
-            console.log(lines[i][2]);
             try {
+              // get filings from backend
               let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [lines[i][0], [type], lines[i][1], lines[i][2]]);
-              if(filingResults !== null) {
-              console.log(filingResults);
+              if (filingResults !== null) {
                 let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, type, filing.filingDate, filing.document, false, filingResults!.state_of_incorporation, filingResults!.ein, filingResults!.address.business, DocumentState.SEARCH));
-                console.log(filingRows);
-                //setFilingResultList(filingRows); //takes in something that is a Filing[]
-                // this seems... messy
-                for(let ind = 0; ind < filingRows.length; ind++){
-                  console.log(filingRows[ind]);
+                for (let ind = 0; ind < filingRows.length; ind++){ // add all filings to the queue
                   addQueueFilingToMap(filingRows[ind]);
                   newQueueFilingMap = new Map<string,Filing>(newQueueFilingMap);
                   newQueueFilingMap.set(filingRows[ind].documentAddress10k, filingRows[ind]);
@@ -595,13 +652,15 @@ function App() {
               }
             }
             catch(error: any){
+              // add error to Alert Map
               let strError = error.message;
               strError = strError.split(':').pop();
+              strError = 'Line ' + (i + 1) + ': ' + strError;
               let errorMessage: AlertData = new AlertData(strError, true); // create error message for empty search
-              addSearchAlertToAlertMap(errorMessage); // set alert message            }
+              addSearchAlertToAlertMap(errorMessage); // set alert message
           }
         }
-          else {
+          else { // 
             let strError = 'You need to put in a CIK and a start date and an end date for line ' + (i + 1);
             let errorMessage: AlertData = new AlertData(strError, true); // create error message for empty search
             addSearchAlertToAlertMap(errorMessage); // set alert message
@@ -713,6 +772,9 @@ function App() {
               </ModalTitle>
             </ModalHeader>
             <ModalBody>
+              Included in text document: 
+              <br/>
+              <br/>
               [CIK] [START_DATE] [END_DATE]
               <br/>
               [CIK] [START_DATE] [END_DATE]
@@ -844,7 +906,7 @@ function App() {
                 </tr>
               </thead>
               <tbody>
-                {/* TO BE CHANGED */}
+                {/* Map for displaying rows in queue table */}
                 {Array.from(queueFilingMap.values()).map(((filing) => (
                   <QueueRow
                   status = {filing.status}
