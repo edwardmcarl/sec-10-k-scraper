@@ -128,6 +128,35 @@ interface FormData { // data for the form
   filings: Array<FilingData>; // filings
 }
 
+// class for search results entity-cik pairs
+class WhateverFiling {
+  cik: string;
+  entity:string;
+  constructor(cikIn:string, entityIn:string) {
+    this.cik = cikIn;
+    this.entity = entityIn;
+  }
+}
+
+interface BackendState{
+  'state': JobState,
+  'error' : any
+}
+
+enum JobState {
+  NO_WORK = 'No Work',
+  WORKING = 'Working',
+  COMPLETE = 'Complete',
+  ERROR = 'Error'
+}
+
+
+// type for the result of the search() Python call
+interface searchResult { // type for the result of the search() Python call
+  cik: string, // cik number
+  entity: string // entity name
+}
+
 function ResultsRow(props: ResultsRowProps) { // row for results
   const handleInfoClick = () => { // handle info click
     if (props.isQueued) { // if filing is in queue
@@ -148,7 +177,7 @@ function ResultsRow(props: ResultsRowProps) { // row for results
       <td>{props.filing.cikNumber}</td>
       <td>{props.filing.filingType}</td>
       <td>{props.filing.filingDate}</td>
-      <td>{props.filing.documentAddress10k}</td>
+      <td><a href={props.filing.documentAddress10k}>Link</a></td>
       <td align="center">
         <Button variant={getButtonColorScheme()} onClick={(event) => {handleInfoClick();}}>{getButtonText()}</Button>
       </td>
@@ -201,35 +230,26 @@ function EmptySearchAlertQueue(props: AlertData) { // alert for empty search
   return (<text></text>); // return nothing
 }
 
-// type for the result of the search() Python call
-interface searchResult { // type for the result of the search() Python call
-  cik: string, // cik number
-  entity: string // entity name
-}
-
-// class for search results entity-cik pairs
-class WhateverFiling {
-  cik: string;
-  entity:string;
-  constructor(cikIn:string, entityIn:string) {
-    this.cik = cikIn;
-    this.entity = entityIn;
-  }
-}
-
 // called by handleInputChange, has to be async
-async function updateSearchInput(input: string) {
+async function executeEntitySearch(input: string): Promise<Result[]> {
   // get the new input;
   const searchInput = input;
   // call search function in API library created by Sena
-  const entityList = await window.requestRPC.procedure('search', [searchInput]);
+  const entityList: searchResult[] = await window.requestRPC.procedure('search', [searchInput]);
     // convert entityList to usable form
-  const entityClassList = (entityList as searchResult[]).map((member) => { 
-    if ((member as searchResult).cik !== undefined && (member as searchResult).entity !== undefined) { //type guard
-      return new Result(member.cik, member.entity);
-    }
+  const entityClassList = (entityList).map((member) => { 
+    return new Result(member.cik, member.entity);
   });
   return entityClassList;
+}
+
+async function executeFormSearch(cik: string, formType: string, startDate: string, endDate: string): Promise<Filing [] | null>{
+  let filingResults: FormData | null = await window.requestRPC.procedure('search_form_info', [cik, [formType], startDate, endDate]);
+  if(filingResults === null) { // if filingResults is not null
+    return null;
+  }else{
+    return filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false, filingResults!.state_of_incorporation, filingResults!.ein, filingResults!.address.business, DocumentState.SEARCH)); // create filing rows
+  }
 }
 
 function App() {
@@ -238,9 +258,6 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [name, setName] = useState('');
   const [isNameSelected, setIsNameSelected] = useState(false);
-
-  // adding something to store entire result
-  const [result, setResult] = useState(new Result('', ''));
   
   // For queue/canvas
   const [show, setShow] = useState(false);
@@ -259,18 +276,16 @@ function App() {
   let oneYearAgo = new Date();
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
   let currentDate = new Date();
-  currentDate.setUTCHours(0,1,0,0); // start of day
+  let defaultForm = '10-K'; // If toggle not chosen, defaults to 10-K
+
+  //App state
   const [startDate, setStartDate] = useState(oneYearAgo);
   const [endDate, setEndDate ] = useState(currentDate);
-  const [filingResultList, setFilingResultList] = useState(new Array<Filing>()); // input data from API
+  const [filingResultList, setFilingResultList] = useState<Filing[]>([]); // input data from API
   //Map that essentially acts as a Set, to track what filings are in the list
   const [queueFilingMap, setQueueFilingMap] = useState(new Map<string,Filing>()); // "queue of filings"
-
   // Dropdown menu setup
-  let defaultForm = '10-K'; // If toggle not chosen, defaults to 10-K
   const [formType, setFormType] = useState(defaultForm);
-
-  const [alertMessage, setAlertMessage] = useState(new AlertData('', false));
   const [alertMessageSearchMap, setAlertMessageSearchMap] = useState(new Map<string, AlertData>());
   const [alertMessageOffcanvasMap, setAlertMessageOffcanvasMap] = useState(new Map<string, AlertData>());
 
@@ -279,13 +294,37 @@ function App() {
   const [smShow, setSmShow] = useState(false); // shows popup for input file
 
   const [path, setPath] = useState(''); // path for download] # await window.desktopPath.getDesktopPath()
+
+  const [spinnerOn, setSpinnerOn] = useState(true); // spinner for download
+  
+  // adding something to store entire result
+  let result = useRef<Result>(new Result('', ''));
+  let entitySuggestionEventQueue = useRef<string[]>([]);
+  let entitySuggestionHandlingOngoing = useRef<boolean>(false);
+  let searchEventQueue = useRef<(() => void)[]>([]);
+  let searchEventHandlingOngoing = useRef<boolean>(false);
+  //setStartDate, setEndState and setFormType does not trigger a change that warrants a rerender.
+  //Do not know why. Guess is the React's diffing determines that there is no need for a rerender or does not do it immediately.
+  //Using mutable objects to maintain value of these three before setting them during rerender
+  //in updateSuggestedForms
+  let startDateMutable = useRef<Date>(startDate);
+  let endDateMutable = useRef<Date>(endDate);
+  let formTypeMutable = useRef<string>(defaultForm);
+
   useEffect(()=> {
     const setPathToDesktop = async () => {
       setPath(await window.desktopPath.getDesktopPath());
     };
     setPathToDesktop().catch(console.log);
   }, []); // empty list as second argument means that it only triggers once, on component mount. Acts like a 'default'
-  const [spinnerOn, setSpinnerOn] = useState(true); // spinner for download
+
+  // periodically poll the state of the backend
+  useEffect(()=> {
+    const timer = setInterval(()=>{
+      pollJobState();
+    }, 1000); //poll every second
+    return ()=> clearInterval(timer);
+  });
 
   const addQueueFilingToMap = (f: Filing) => { // add filing to queue
    let newQueueFilingMap = new Map<string,Filing>(queueFilingMap); // create a new map copying the old queue
@@ -302,7 +341,6 @@ function App() {
       setAllowedToExtract(false);
     }
   };
-
 
   const addSearchAlertToAlertMap = (alert: AlertData) => { // add alert to alert map
     let newAlertMap = new Map<string, AlertData>(alertMessageSearchMap); // create a new map copying the old alert map
@@ -326,34 +364,59 @@ function App() {
     setAlertMessageOffcanvasMap(new Map<string,AlertData>()); // update the map alert
   };
 
-  let searchRequestQueue = useRef<string[]>([]);
-  let searchRequestOngoing = useRef<boolean>(false);
-
-  const handleSearchClick = async () => { // Triggers when search button is clicked
+  const updateSuggestedForms = () => {
     clearSearchAlertMap(); // clear alert map
-    let startDateISO = startDate.toISOString().split('T')[0]; // get start date in ISO format
-    let endDateISO = endDate.toISOString().split('T')[0]; // get end date in ISO format
-    try {
-      let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [result.cik, [formType], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
-      if(filingResults !== null) { // if filingResults is not null
-        let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false, filingResults!.state_of_incorporation, filingResults!.ein, filingResults!.address.business, DocumentState.SEARCH)); // create filing rows
-        setFilingResultList(filingRows); //takes in something that is a Filing[]
+    //Set next start date, end date, form type and filing result list even though it does not cause a rerender
+    //It will be caused later when all search events are done
+    setStartDate(startDateMutable.current);
+    setEndDate(endDateMutable.current);
+    setFormType(formTypeMutable.current);
+    setFilingResultList([]);
+
+    let startDateISO = `${startDateMutable.current.getFullYear()}-`+
+      `${startDateMutable.current.getMonth() >= 10 ? startDateMutable.current.getMonth() : '0' + startDateMutable.current.getMonth()}-`+
+      `${startDateMutable.current.getDate() >= 10 ? startDateMutable.current.getDate() : '0' + startDateMutable.current.getDate()}`; // get start date in ISO format
+    let endDateISO = `${endDateMutable.current.getFullYear()}-`+
+      `${endDateMutable.current.getMonth() >= 10 ? endDateMutable.current.getMonth() : '0' + endDateMutable.current.getMonth()}-`+
+      `${endDateMutable.current.getDate() >= 10 ? endDateMutable.current.getDate() : '0' + endDateMutable.current.getDate()}`;// get end date in ISO format
+    executeFormSearch(result.current.cik, formTypeMutable.current, startDateISO, endDateISO)
+    .then((results) => {
+      let errorMessage: AlertData| null = null;
+      if (!results){ //Not likely that the form will never be added to search but let us still handle that
+        errorMessage = new AlertData('No form is selected', true); // create error message for empty search
+      }else if(results.length === 0){
+        errorMessage = new AlertData('No filings found', true); // create error message for empty search
+      }else{
+        setFilingResultList(results);
       }
-      if(filingResultList.length === 0) { // Checking to see if no results were found
-        let errorMessage: AlertData = new AlertData('No filings found', true); // create error message for empty search
+      if(errorMessage){
         addSearchAlertToAlertMap(errorMessage); // set alert message
       }
-    }
-    catch (error: any) {
+    })
+    .catch((error) => {
       let strError = error.message;
       strError = strError.split(':').pop();
       let errorMessage: AlertData = new AlertData(strError, true); // create error message for empty search
       addSearchAlertToAlertMap(errorMessage); // set alert message
+    }).finally(() => {
+      processSearchEventQueueRequests();
+    });
+  };
+
+  const handleSuggestedFormsUpdate: () => void = () => {
+    searchEventQueue.current.push(updateSuggestedForms);
+    if(!searchEventHandlingOngoing.current){
+      processSearchEventQueueRequests();
     }
   };
 
+  const handleSearchClick = () => { // Triggers when search button is clicked
+    handleSuggestedFormsUpdate();
+  };
+
   const handleFormDropdownClick = (e: any) => { // Triggers when form dropdown is clicked
-    setFormType(e); // set form type to the selected form
+    formTypeMutable.current = e; // set form type to the selected form
+    handleSuggestedFormsUpdate();
   };
 
   const handleNERCheck = () => { // Triggers when NER checkbox is clicked
@@ -377,29 +440,11 @@ function App() {
 
   };
 
-  interface BackendState{
-    'state': JobState,
-    'error' : any
-  }
-  enum JobState {
-    NO_WORK = 'No Work',
-    WORKING = 'Working',
-    COMPLETE = 'Complete',
-    ERROR = 'Error'
-  }
   const pollJobState = async () => {
     let time = Date.now();
     let backendState: BackendState = await window.requestRPC.procedure('get_job_state');
     setSpinnerOn(backendState.state === JobState.WORKING);
   };
-
-  // periodically poll the state of the backend
-  useEffect(()=> {
-    const timer = setInterval(()=>{
-      pollJobState();
-    }, 1000); //poll every second
-    return ()=> clearInterval(timer);
-  });
 
   const handleOutputPath = async () => {
     let pathInput:string[] | undefined = await window.pathSelector.pathSelectorWindow();
@@ -425,31 +470,37 @@ function App() {
     
     This queue ensures all requests are executed and completed in order.
     */
-    searchRequestQueue.current.push(e.target.value);
-    if(!searchRequestOngoing.current){//Check if the queue is currently being processed
-      processQueueRequests(); //Process queue if not
-    }
-  };
-
-  const processQueueRequests = () => {
-    processQueueRequestsRecursive(searchRequestQueue.current.shift());
-  };
-
-  const processQueueRequestsRecursive = (nameValue: string| undefined) => {
-    if(nameValue === undefined){ //End of queue
-      //Signal processing is done
-      searchRequestOngoing.current = false;
-      return;
-    }
-    searchRequestOngoing.current = true; //Signal process is now ongoing
-    clearSearchAlertMap(); //Clear offcanvas alert map
-    setName(nameValue); // set the new input
+    setName(e.target.value); // set the new input
     // even if we've selected already an item from the list, we should reset it since it's been changed
     setIsNameSelected(false);
+    entitySuggestionEventQueue.current.push(e.target.value);
+    if(!entitySuggestionHandlingOngoing.current){//Check if the queue is currently being processed
+      processEntitySuggestionEventQueueRequests(); //Process queue if not
+    }
+  };
+
+  const processEntitySuggestionEventQueueRequests = () => {
+    while(entitySuggestionEventQueue.current.length > 1) entitySuggestionEventQueue.current.shift();
+    processEntitySuggestionEventQueueRequestsRecursive(entitySuggestionEventQueue.current.shift());
+  };
+
+  const processSearchEventQueueRequests = () => {
+    while(searchEventQueue.current.length > 1) searchEventQueue.current.shift();
+    processSearchEventQueueRequestsRecursive(searchEventQueue.current.shift());
+  };
+
+  const processEntitySuggestionEventQueueRequestsRecursive = (nameValue: string| undefined) => {
+    if(nameValue === undefined){ //End of queue
+      //Signal processing is done
+      entitySuggestionHandlingOngoing.current = false;
+      return;
+    }
+    entitySuggestionHandlingOngoing.current = true; //Signal process is now ongoing
+    clearSearchAlertMap(); //Clear offcanvas alert map
     setResults([]); // clean previous results
     if (nameValue.length > 1) { // if the input is more than 1 character
       setIsLoading(true); // set loading to true
-      updateSearchInput(nameValue)  // get the results
+      executeEntitySearch(nameValue)  // get the results
         .then((res) => {
           setResults(res as React.SetStateAction<never[]>); // set the results
           setIsLoading(false); // set loading to false
@@ -464,35 +515,40 @@ function App() {
           setIsLoading(false);
         })
         .finally(()=>{
-          processQueueRequests(); //Process next requests after promise
+          processEntitySuggestionEventQueueRequests(); //Process next requests after promise
         });
     }else{
-      processQueueRequests();
+      processEntitySuggestionEventQueueRequests();
     }
   };
 
-  const onNameSelected = async (selectedResult: Result) => { // Triggers when an item is selected from the dropdown
+  const processSearchEventQueueRequestsRecursive = (eventFunc: (() => void) | undefined) => {
+    if (eventFunc === undefined){
+      searchEventHandlingOngoing.current = false;
+      return;
+    }
+    searchEventHandlingOngoing.current = true;
+    eventFunc();
+  };
+
+  const onNameSelected = (selectedResult: Result) => { // Triggers when an item is selected from the dropdown
     // user clicks the little box with the appropriate entity
     // save information about selected entity
     setName(selectedResult.name); // set the new input
-    setResult(selectedResult); // set the new input
+    result.current = selectedResult; // set the new input
     setIsNameSelected(true); // set the new input
-    setResults([]); // clean previous resultsd
-    let startDateISO = startDate.toISOString().split('T')[0];   // get start date in ISO format
-    let endDateISO = endDate.toISOString().split('T')[0]; // get end date in ISO format
-    try {
-      let filingResults:FormData | null = await window.requestRPC.procedure('search_form_info', [selectedResult.cik, [formType], startDateISO, endDateISO]); // Assuming searchBarContents is CIK Number, MUST have CIK present in search bar
-      if(filingResults !== null) { // if filingResults is not null
-        let filingRows = filingResults.filings.map((filing) => new Filing(filingResults!.issuing_entity, filingResults!.cik, formType, filing.filingDate, filing.document, false, filingResults!.state_of_incorporation, filingResults!.ein, filingResults!.address.business, DocumentState.SEARCH)); // create filing rows
-        setFilingResultList(filingRows); //takes in something that is a Filing[]
-      }
-    }
-    catch (error: any) {
-      let strError = error.message;
-      strError = strError.split(':').pop();
-      let errorMessage: AlertData = new AlertData(strError, true); // create error message for empty search
-      addSearchAlertToAlertMap(errorMessage); // set alert message
-    }
+    setResults([]); // clean previous results
+    handleSuggestedFormsUpdate();
+  };
+
+  const onStartDateChange = (e: any) => {
+    startDateMutable.current = e;
+    handleSuggestedFormsUpdate();
+  };
+
+  const onEndDateChange = (e: any) => {
+    endDateMutable.current = e;
+    handleSuggestedFormsUpdate();
   };
 
   // https://www.pluralsight.com/guides/how-to-use-a-simple-form-submit-with-files-in-react
@@ -608,11 +664,11 @@ function App() {
       <Row className="mb-3">
         <Col>
           <text>Start Date: </text>
-          <DatePicker onChange={setStartDate} value={startDate}/>
+          <DatePicker onChange={onStartDateChange} value={startDate}/>
         </Col>
         <Col>
           <text>End Date: </text>
-          <DatePicker onChange={setEndDate} value={endDate} />
+          <DatePicker onChange={onEndDateChange} value={endDate} />
         </Col>
         <Col className='input-group'>
           <text>Form Type:&nbsp;&nbsp;&nbsp;</text>
