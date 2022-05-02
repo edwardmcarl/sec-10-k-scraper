@@ -1,6 +1,5 @@
 # Reason for escaping mypy type check: https://bugs.launchpad.net/beautifulsoup/+bug/1843791
 # Can create a 'stublist' but wanted to get this commit first
-import cProfile
 import gzip
 import os
 import re
@@ -401,14 +400,3 @@ class Parse(RateLimited):
             for section in doc_map.keys()
         }
         return section_texts
-
-
-def profile_this():
-    docurl = "https://www.sec.gov/Archives/edgar/data/0000037996/000003799621000012/f-20201231.htm"
-    c = RateLimitTracker(5)
-    x = Parse(c)
-    x.parse_document(docurl)
-
-
-if __name__ == "__main__":
-    cProfile.run("profile_this()", "profiling.txt")

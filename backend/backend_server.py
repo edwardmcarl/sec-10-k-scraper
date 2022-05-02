@@ -148,16 +148,6 @@ def bind_to_unused_port(srv: zerorpc.Server, port: int = 55555):
     return port
 
 
-def foo():
-    rate_limiter = RateLimitTracker(5)
-    api_instance = BackendServer(rate_limiter)
-    api_instance._rate_limited_html_download(
-        "https://www.sec.gov/Archives/edgar/data/0000037996/000003799621000012/f-20201231.htm",
-        Path("/home", "edcarl", "Desktop"),
-        "EXXON_421-2934.html",
-    )
-
-
 def exit_gracefully(srv: zerorpc.Server):
     while True:
         if killServer:
