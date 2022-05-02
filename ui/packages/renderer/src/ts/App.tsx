@@ -177,7 +177,7 @@ function ResultsRow(props: ResultsRowProps) { // row for results
       <td>{props.filing.cikNumber}</td>
       <td>{props.filing.filingType}</td>
       <td>{props.filing.filingDate}</td>
-      <td><a href={props.filing.documentAddress10k}>Link</a></td>
+      <td>{props.filing.documentAddress10k}</td>
       <td align="center">
         <Button variant={getButtonColorScheme()} onClick={(event) => {handleInfoClick();}}>{getButtonText()}</Button>
       </td>
