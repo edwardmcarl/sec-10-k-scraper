@@ -429,6 +429,12 @@ function App() {
     setAlertMessageOffcanvasMap(new Map<string,AlertData>()); // update the map alert
   };
 
+  const returnTimezoneISOFormat: (date: Date) => string = (date: Date) => {
+    return `${date.getFullYear()}-`+
+      `${date.getMonth() + 1 >= 10 ? date.getMonth() + 1 : '0' + (date.getMonth() + 1)}-`+
+      `${date.getDate() >= 10 ? date.getDate() : '0' + date.getDate()}`; // get date in ISO format
+  };
+
   // Update the suggested forms dropdown
   const updateSuggestedForms = () => {
     clearSearchAlertMap(); // clear alert map
@@ -439,12 +445,8 @@ function App() {
     setFormType(formTypeMutable.current);
     setFilingResultList([]);
 
-    let startDateISO = `${startDateMutable.current.getFullYear()}-`+
-      `${startDateMutable.current.getMonth() >= 10 ? startDateMutable.current.getMonth() : '0' + startDateMutable.current.getMonth()}-`+
-      `${startDateMutable.current.getDate() >= 10 ? startDateMutable.current.getDate() : '0' + startDateMutable.current.getDate()}`; // get start date in ISO format
-    let endDateISO = `${endDateMutable.current.getFullYear()}-`+
-      `${endDateMutable.current.getMonth() >= 10 ? endDateMutable.current.getMonth() : '0' + endDateMutable.current.getMonth()}-`+
-      `${endDateMutable.current.getDate() >= 10 ? endDateMutable.current.getDate() : '0' + endDateMutable.current.getDate()}`;// get end date in ISO format
+    let startDateISO = returnTimezoneISOFormat(startDateMutable.current); // get start date in ISO format
+    let endDateISO = returnTimezoneISOFormat(endDateMutable.current);// get end date in ISO format
     executeFormSearch(result.current.cik, formTypeMutable.current, startDateISO, endDateISO)
     .then((results) => {
       let errorMessage: AlertData| null = null;
