@@ -20,7 +20,18 @@ const config = {
   extraMetadata: {
     version: process.env.VITE_APP_VERSION,
   },
-  extraResources: 'extraResources'
+  extraResources: 'extraResources',
+  win: {
+    target: 'nsis'
+  },
+  nsis: {
+    oneClick: false,
+    allowElevation: true,
+    allowToChangeInstallationDirectory: true
+  },
+  mac: {
+    target: 'dmg'
+  }
 };
 
 module.exports = config;
