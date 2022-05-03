@@ -440,10 +440,10 @@ function App() {
     setFilingResultList([]);
 
     let startDateISO = `${startDateMutable.current.getFullYear()}-`+
-      `${startDateMutable.current.getMonth() >= 10 ? startDateMutable.current.getMonth() : '0' + startDateMutable.current.getMonth()}-`+
+      `${startDateMutable.current.getMonth() + 1 >= 10 ? startDateMutable.current.getMonth() + 1 : '0' + (startDateMutable.current.getMonth() + 1)}-`+
       `${startDateMutable.current.getDate() >= 10 ? startDateMutable.current.getDate() : '0' + startDateMutable.current.getDate()}`; // get start date in ISO format
     let endDateISO = `${endDateMutable.current.getFullYear()}-`+
-      `${endDateMutable.current.getMonth() >= 10 ? endDateMutable.current.getMonth() : '0' + endDateMutable.current.getMonth()}-`+
+      `${endDateMutable.current.getMonth() + 1 >= 10 ? endDateMutable.current.getMonth() + 1 : '0' + (endDateMutable.current.getMonth() + 1)}-`+
       `${endDateMutable.current.getDate() >= 10 ? endDateMutable.current.getDate() : '0' + endDateMutable.current.getDate()}`;// get end date in ISO format
     executeFormSearch(result.current.cik, formTypeMutable.current, startDateISO, endDateISO)
     .then((results) => {
