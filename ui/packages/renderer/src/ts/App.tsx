@@ -9,6 +9,7 @@ import {useState, useEffect, useRef} from 'react';
 import {Button, Col, Container, Dropdown, Row, FormControl, FormCheck, FormGroup, Table, ListGroup, ListGroupItem, Spinner, Offcanvas, OffcanvasHeader, OffcanvasBody, OffcanvasTitle, Alert, Image, Modal, ModalBody, ModalHeader, ModalTitle } from 'react-bootstrap';
 import DatePicker from 'react-date-picker';
 
+
 //Done to make testing possible with react$ in ui/test/specs
 const DropdownToggle = Dropdown.Toggle;
 const DropdownMenu = Dropdown.Menu;
@@ -159,7 +160,7 @@ interface FormData { // data for the form
  */
 interface BackendState{
   'state': JobState, // specifies step of the process for a job
-  'error' : any // error message if any
+  'error' : string | null // error message if any
 }
 
 /**
@@ -321,6 +322,7 @@ function App() {
   const [show, setShow] = useState(false); // holds if queue is shown
   const handleClose = () => setShow(false); // handle close
   const [allowedToExtract, setAllowedToExtract] = useState(false); // button for extract
+  const [mostRecentJobErrorMessage, setMostRecentJobErrorMessage] = useState<string | null>(null);
 
   const handleShow = () => { // handle to show offcanvas
     if (path !== '' && queueFilingMap.size > 0) {
@@ -508,9 +510,18 @@ function App() {
   };
 
   const pollJobState = async () => { // Triggers every second
-    let time = Date.now();
     let backendState: BackendState = await window.requestRPC.procedure('get_job_state');
     setSpinnerOn(backendState.state === JobState.WORKING);
+    
+    // Since the backend will halt a job on its first uncaught exception, there's only ever a single error
+    // message to consider from it. Thus, we dedicate a key in the off-canvas alert map to this: 'backend_job_error'.
+    let newAlertMap = new Map<string, AlertData>(alertMessageOffcanvasMap);
+    if (backendState.error === null){
+      newAlertMap.delete('backend_job_error');
+    } else {
+      newAlertMap.set('backend_job_error', new AlertData(backendState.error, true));
+    }
+    setAlertMessageOffcanvasMap(newAlertMap);
   };
 
   const handleOutputPath = async () => {
