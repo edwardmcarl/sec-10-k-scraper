@@ -73,41 +73,6 @@ class ExcelResultRow:
 
 
 class DataWriter:
-    """
-    We need to:
-
-     - Take in a request that is a *complete batch of requests, all at once*
-
-     - Waits on all the requests
-
-     - When it has all the requests, applies NER to them
-
-
-     We need functions to:
-        - Grab metadata for every company in the query V
-
-        - Take in metadata + parsed text + NER results, and merge into one thing (perhaps a dataframe row?)
-
-        - Load an xlsx to dataframe V
-
-        - Make a dataframe with appropriate rows V
-
-        - Add a row to the dataframe
-
-        - Write a (sorted!) dataframe as an xlsx
-
-        - Download a html file to a specific place
-
-        - Take in a set of filings and:
-            - Grab metadata
-            - make all the requests
-            - parse + NER each request
-            - convert to dataframes
-            - write each HTML to a file if-not-exists
-            - load the main excel file from the working dir (create if-not-exists) as a dataframe
-            - add all our produced dataframe rows to it
-            - sort dataframe and overwrite the existing xlsx
-    """
 
     SECTION_TITLES = {
         "item1": "1. Business",
@@ -132,10 +97,10 @@ class DataWriter:
         "item13_ner": "NER 13. Certain Relationships",
     }
 
-    def pwd(self):
+    def pwd(self): # debug method to be called from the frontend
         return os.getcwd()
 
-    def _load_main_spreadsheet(self, working_directory: str):
+    def _load_main_spreadsheet(self, working_directory: str): # loads spreadsheet as DataFrame, or creates one if it doesn't exist
         # assume that the working directory exists
         excel_path = Path(working_directory, "summary.xlsx")
         if excel_path.exists():
@@ -158,6 +123,15 @@ class DataWriter:
         parser_results: Dict[str, Dict[str, str]],
         ner_results: Dict[str, Set[str]],
     ):
+        '''
+            Adds a row to the given DataFrame representing the data of a new 10-K filing.
+            Takes in:
+                df: a DataFrame containing the information of the summary.xlsx spreadsheet
+                filing_info: filing metadata corresponding to a Filing object from the frontend
+                parser_results: the return value of Parse.parse_document() for the filing in question
+                ner_results: the return value of Parse._apply_named_entity_recognition() for the filing in question
+            Returns the new, expanded dataframe, either to be written to disk or to be further expanded.
+        '''
         metadata = {
             "EIN": filing_info["ein"],
             "Company Name": filing_info["entityName"],

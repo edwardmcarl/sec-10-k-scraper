@@ -1,5 +1,5 @@
 # sec-10-k-scraper
-
+This app allows users to easily scrape the contents from specific sections of SEC 10-K filings and apply named entity recognition (NER) to the results. The results are output to `.xlsx`. Written in Python and NodeJS/Electron, it builds to an installer that allows users to use the app on all major operating systems without any dependencies.
 ## Quickstart - Single-Command Build
 To install all dependencies for the entire project, run `npm install` in the *root directory*.
 To build the entire project, run `npm run build:full` either in the root directory or the `/ui/` subdirectory.
@@ -8,7 +8,8 @@ This will:
   - move the resulting executable into `/ui/extraResources/` (see the section "Frontend")
   - build the Electron frontend
   The resulting product can be found in `/frontend/dist/`.
-
+**This only builds the app for the OS (Windows / Mac / Linux) that your computer uses!** 
+To build for all three OSes, you will need to set up this repo on a Windows machine, a Mac machine, and a Linux machine!
 ## Project Structure
 This repository is divided into two main directories: `backend` and `ui`.
 ### Backend
@@ -16,8 +17,23 @@ This is the `poetry` project containing the Python backend to the app.
 
 
 #### Structure
-`backend_server.py` is the entry point. In it, we configure the `zerorpc` server we'll use to communicate with the frontend. (documentation coming soon)
-Business logic goes in subdirectories like `api`.
+`backend_server.py` is the entry point. In it, we configure the `zerorpc` server we use to communicate with the frontend.
+
+##### Business Logic
+Business logic is organized by functionality.
+###### backend/misc
+Contains helper code for rate-limiting requests to the SEC API and for serializing complex return types with msgpack (see developer manual).
+###### backend/writer
+Contains code for writing processed data to Excel.
+###### backend/api
+Contains code to communicate with the SEC API, to search for and fetch documents.
+###### backend/parse
+Contains code for parsing 10-K filings, extracting key sections, and applying Named Entity Recognition to the results.
+##### Miscellenia 
+###### backend/temp
+Unimportant. A temporary directory created when downloading the NER model.
+##### backend/resources
+This directory contains the extracted version of the NER model downloaded during the install process. You don't need to touch this, but make sure its contents don't get committed; they vary slightly across platforms.
 #### Tooling
 We have a number of tools to help us write good code. These include:
 - [`isort`](https://pycqa.github.io/isort/) to optimize import ordering
@@ -26,23 +42,31 @@ We have a number of tools to help us write good code. These include:
 - [`black`](https://github.com/psf/black), a hassle-free code formatter
 - [`docformatter`](https://pypi.org/project/docformatter/), to clean up docstrings (enforce triple-quoting, the formatting of summary vs. detailed description, etc.) in compliance with PEP 257
 
-We use [`pyinstaller`](https://pyinstaller.readthedocs.io/en/stable/) to build our code to a single platform-specific executable, which is then bundled into the Electron app.
+To run these tools, as well as unit tests, run `poetry run pypyr pypyr/quality-check` in the `backend` directory.
 
-These tools are currently not called automatically. It's highly recommended that you use *all* of them and ensure they throw no errors before committing code.
+We use [`pyinstaller`](https://pyinstaller.readthedocs.io/en/stable/) to build our code to a platform-specific executable, which is then bundled into the Electron app.
+
+These tools are all called automatically:
+- before each build
+- before commits
+Neither operation will succeed if any of the tools or unit tests fail.
+
 #### To Install Dependencies:
-run `poetry install`
-The key dependency of this project is `zerorpc`, which we use to accept function calls from the Electron frontend and serve their results.
-
+In the `backend` directory, run `poetry install`, to install python dependencies, and 
+`poetry run pypyr pypyr/download-ner-model` to properly download and bundle the backend's Named Entity Recognition model for your platform.
+Both of these operations are done automatically when you run `npm install` in the root directory.
 #### To Run Python-Related Code:
 `poetry` uses a virtual environment to isolate a python version and set of dependencies from the rest of your system. To run commands, prefix them with `poetry run` to make sure you're using the appropriate installations of everything for this project. 
-For example, to do type-checking, which would normally be `mypy .`, run
+For example, to manually perform type-checking, which would normally be `mypy .`, run
 `poetry run mypy .`
 To launch the backend, which would normally by `python backend_server.py`, run
 `poetry run python backend_server.py`.
 
-#### To Build The App:
-`poetry run pyinstaller backend_server.spec --onefile`
-The resulting executable will be in `backend/dist`.
+#### To Build The Backend:
+`poetry run pyinstaller backend_server.spec`
+The resulting executable and supporting files will be in `backend/dist`.
+You generally don't want or need to do this yourself; to actually use the backend, it needs to be bundled with the frontend.
+Use `npm run build:full` to build the whole app, resulting in a new build of the full app in `ui/dist` that will use the new backend build.
 
 
 ### UI
@@ -55,7 +79,7 @@ Intermediate build products used by tooling. Do not touch.
 ##### ui/buildResources/
 For information like the app installer's icon. Not important.
 ##### ui/dist/
-Where build products go. `npm run compile` will produce a platform-specific *unpacked directory* inside `ui/dist/`, e.g. `ui/dist/linux-unpacked`, containing the Electron executable and associated files. The final distributable will be an installer; for development and debugging, just run the executable, `fractracker-sec-ui{.exe/.app}`, in the unpacked folder.
+Where build products go. `npm run build:full` will produce a platform-specific *unpacked directory* inside `ui/dist/`, e.g. `ui/dist/linux-unpacked`, containing the Electron executable and associated files. The final distributable will be an installer; for development and debugging, just run the executable, `fractracker-sec-ui{.exe/.app}`, in the unpacked folder.
 
 ##### ui/extraResources/
 the electron-builder `extraResources` folder. This is where we place the Python `backend` executable to be included in the Electron app.
@@ -88,7 +112,7 @@ Metadata for tooling. Don't worry about this.
 Before committing, `nano-staged` runs `eslint` on every applicable file in `packages` that is staged for commit, fixing minor errors like missing semicolons automatically. `tsc` checks that types are valid and compatible across the whole project. If either utility finds nay issues it can't resolve automatically, it's reported in the command line and the commit is stopped.
 #### Building
 First, build the Python executable and place it in `buildResources`.
-Then run `npm run compile`. The output will be in `ui/dist/{platform}-unpacked` (see above).
+Then run `npm run build:full`. The output will be in `ui/dist/{platform}-unpacked` (see above).
 #### Remote Function Calls
 The UI communicates with the Python backend using `zerorpc`. More details to come in the future, but the gist is:
 
