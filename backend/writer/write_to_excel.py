@@ -97,10 +97,12 @@ class DataWriter:
         "item13_ner": "NER 13. Certain Relationships",
     }
 
-    def pwd(self): # debug method to be called from the frontend
+    def pwd(self):  # debug method to be called from the frontend
         return os.getcwd()
 
-    def _load_main_spreadsheet(self, working_directory: str): # loads spreadsheet as DataFrame, or creates one if it doesn't exist
+    def _load_main_spreadsheet(
+        self, working_directory: str
+    ):  # loads spreadsheet as DataFrame, or creates one if it doesn't exist
         # assume that the working directory exists
         excel_path = Path(working_directory, "summary.xlsx")
         if excel_path.exists():
@@ -123,15 +125,15 @@ class DataWriter:
         parser_results: Dict[str, Dict[str, str]],
         ner_results: Dict[str, Set[str]],
     ):
-        '''
-            Adds a row to the given DataFrame representing the data of a new 10-K filing.
-            Takes in:
-                df: a DataFrame containing the information of the summary.xlsx spreadsheet
-                filing_info: filing metadata corresponding to a Filing object from the frontend
-                parser_results: the return value of Parse.parse_document() for the filing in question
-                ner_results: the return value of Parse._apply_named_entity_recognition() for the filing in question
-            Returns the new, expanded dataframe, either to be written to disk or to be further expanded.
-        '''
+        """
+        Adds a row to the given DataFrame representing the data of a new 10-K filing.
+        Takes in:
+            df: a DataFrame containing the information of the summary.xlsx spreadsheet
+            filing_info: filing metadata corresponding to a Filing object from the frontend
+            parser_results: the return value of Parse.parse_document() for the filing in question
+            ner_results: the return value of Parse._apply_named_entity_recognition() for the filing in question
+        Returns the new, expanded dataframe, either to be written to disk or to be further expanded.
+        """
         metadata = {
             "EIN": filing_info["ein"],
             "Company Name": filing_info["entityName"],

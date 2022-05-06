@@ -20,13 +20,17 @@ from misc import serializable_dataclass  # noqa: E402
 
 
 @dataclass
-class SearchData(DataClassDictMixin): # extends DataClassDictMixIn to be serializable over zeroRPC
+class SearchData(
+    DataClassDictMixin
+):  # extends DataClassDictMixIn to be serializable over zeroRPC
     cik: str
     entity: str
 
 
 @dataclass
-class AddressData(DataClassDictMixin): # extends DataClassDictMixIn to be serializable over zeroRPC
+class AddressData(
+    DataClassDictMixin
+):  # extends DataClassDictMixIn to be serializable over zeroRPC
     street1: str
     street2: str
     city: str
@@ -36,7 +40,9 @@ class AddressData(DataClassDictMixin): # extends DataClassDictMixIn to be serial
 
 
 @dataclass
-class FilingData(DataClassDictMixin): # extends DataClassDictMixIn to be serializable over zeroRPC
+class FilingData(
+    DataClassDictMixin
+):  # extends DataClassDictMixIn to be serializable over zeroRPC
     reportDate: str
     filingDate: str
     form: str
@@ -46,13 +52,17 @@ class FilingData(DataClassDictMixin): # extends DataClassDictMixIn to be seriali
 
 
 @dataclass
-class BulkAddressData(DataClassDictMixin): # extends DataClassDictMixIn to be serializable over zeroRPC
+class BulkAddressData(
+    DataClassDictMixin
+):  # extends DataClassDictMixIn to be serializable over zeroRPC
     mailing: AddressData
     business: AddressData
 
 
 @dataclass
-class FormData(DataClassDictMixin): # extends DataClassDictMixIn to be serializable over zeroRPC
+class FormData(
+    DataClassDictMixin
+):  # extends DataClassDictMixIn to be serializable over zeroRPC
     cik: str
     issuing_entity: str
     state_of_incorporation: str
