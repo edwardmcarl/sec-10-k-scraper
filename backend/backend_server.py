@@ -2,7 +2,6 @@ import sys
 import threading
 from enum import Enum
 from pathlib import Path
-from traceback import format_exception
 from typing import Any, Dict, List  # noqa:F401
 
 import gevent  # type: ignore
@@ -53,7 +52,7 @@ class BackendServer(APIConnection, DataWriter, Parse):
         # set state to indicate we're working
         if self.processing_state == JobState.WORKING:
             return False
-        self.processing_state = JobState.WORKING
+        self._set_job_state(JobState.WORKING)
         gevent.spawn(
             self._process_filings, filing_list, output_folder_path, perform_ner
         )
@@ -65,6 +64,8 @@ class BackendServer(APIConnection, DataWriter, Parse):
         output_folder_path: str = "./output",
         perform_ner: bool = True,
     ):
+        state_message = "downloading documents"
+        subject = ""
         try:
             # create the path / output folder if it doesn't exist
             Path(output_folder_path).mkdir(parents=True, exist_ok=True)
@@ -90,21 +91,32 @@ class BackendServer(APIConnection, DataWriter, Parse):
             ]
 
             # parse html iteratively, to maximize number of event loop yields with gevent
-            parse_task_results = [
-                self.parse_document(filing["documentAddress10k"])
-                for filing in filing_list_10k
-            ]
+            state_message = "parsing document"
+            parse_task_results: List[Dict[str, Dict[str, str]]] = []
+            for filing in filing_list_10k:
+                subject = f'{filing["documentAddress10k"]} for {filing["entityName"]}'
+                parse_task_results.append(
+                    self.parse_document(filing["documentAddress10k"])
+                )
 
             # apply NER iteratively, to maximize number of event loop yields with gevent
-            ner_task_results = [
-                self._apply_named_entity_recognition(parsed_doc)
-                if perform_ner
-                else {}  # if we don't run NER, behave as if no entities were recognized
-                for parsed_doc in parse_task_results
-            ]
+            ner_task_results = []
+            state_message = "applying NER to document"
+            for i in range(len(parse_task_results)):
+                subject = f'{filing_list_10k[i]["documentAddress10k"]} for {filing_list_10k[i]["entityName"]}'
+                if perform_ner:
+                    ner_task_results.append(
+                        self._apply_named_entity_recognition(parse_task_results[i])
+                    )
+                else:
+                    ner_task_results.append(
+                        {}
+                    )  # if we don't run NER, behave as if no entities were recognized
 
+            state_message = "adding spreadsheet row for document"
             # iteratively expand spreadsheet
             for i in range(0, len(parse_task_results)):
+                subject = f'{filing_list_10k[i]["documentAddress10k"]} for {filing_list_10k[i]["entityName"]}'
                 spreadsheet_contents = self.add_dataframe_row(
                     spreadsheet_contents,
                     filing_list_10k[i],
@@ -118,8 +130,11 @@ class BackendServer(APIConnection, DataWriter, Parse):
             )
             self._set_job_state(JobState.COMPLETE)
         except Exception as err:
-            error_report = "\n".join(format_exception(err))  # type: ignore
-            self._set_job_state(JobState.ERROR, error_report)
+            msg = ""
+            if hasattr(err, "message"):
+                msg = ":\n" + err.message  # type: ignore
+            error_desc = f"Error while {state_message} {subject}{msg}"
+            self._set_job_state(JobState.ERROR, error_desc)
 
 
 BIND_ADDRESS = "tcp://127.0.0.1:55565"
